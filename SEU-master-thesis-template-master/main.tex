@@ -1,0 +1,173 @@
+% !TEX program = xelatex
+% \documentclass[algorithmlist,figurelist,tablelist,nomlist]{template/seumasterthesis} %学硕使用这一行
+\documentclass[algorithmlist,figurelist,tablelist,nomlist,engineer,fontset=fandol,nocolorlinks]{template/seumasterthesis}
+\setCJKmainfont{Noto Serif CJK SC}
+\setCJKsansfont{Noto Sans CJK SC}
+\usepackage{amsmath,amssymb}
+\usepackage{booktabs}
+\usepackage{multirow} % 处理跨行表格数据
+\usepackage{array}
+\usepackage{longtable}
+\usepackage{tikz}
+\usepackage{pgfplots}
+\usepackage{float}
+\usepackage[section]{placeins}
+\usepackage{lipsum}
+\usepackage{pifont}  % 引入 pifont 宏包
+\usepackage{enumitem}
+\usepackage{etoolbox}
+\usetikzlibrary{positioning,calc,arrows.meta,fit,backgrounds,shapes.multipart}
+\pgfplotsset{compat=1.18}
+\preto{\subsection}{\FloatBarrier}
+
+\definecolor{pgBlue}{HTML}{5B8FF9}
+\definecolor{pgTeal}{HTML}{5AD8A6}
+\definecolor{pgOrange}{HTML}{F6BD16}
+\definecolor{pgPurple}{HTML}{9270CA}
+\definecolor{pgGreen}{HTML}{7BCFA6}
+\definecolor{pgDark}{HTML}{2F3A4A}
+\definecolor{pgSkyBg}{HTML}{EAF3FF}
+\definecolor{pgMintBg}{HTML}{E8F8F1}
+\definecolor{pgAmberBg}{HTML}{FFF3D9}
+\definecolor{pgLavenderBg}{HTML}{F1ECFF}
+\definecolor{pgGreenBg}{HTML}{EEF8F1}
+
+\tikzset{
+    roadmaptitle/.style={draw=pgBlue!70!black, fill=pgBlue!16, rounded corners=10pt, line width=1pt, minimum height=1.1cm, align=center, text=pgDark, font=\bfseries\large},
+    roadmapleft/.style={draw=pgOrange!78!black, fill=pgAmberBg, rounded corners=10pt, line width=1pt},
+    roadmapright/.style={draw=pgTeal!72!black, fill=pgMintBg, rounded corners=10pt, line width=1pt},
+    roadmapcard/.style={draw=black!72, fill=white, rounded corners=8pt, line width=0.9pt, minimum width=4.1cm, minimum height=1.1cm, text width=4.0cm, align=center},
+    roadmaparrow/.style={-{Latex[length=3mm,width=2.2mm]}, line width=1.1pt, draw=pgBlue!78!black},
+    feedbackarrow/.style={-{Latex[length=3mm,width=2.2mm]}, line width=1pt, draw=pgOrange!88!black, dashed},
+    flowboxblue/.style={draw=pgBlue!72!black, fill=pgSkyBg, rounded corners=8pt, line width=0.95pt, align=center},
+    flowboxorange/.style={draw=pgOrange!82!black, fill=pgAmberBg, rounded corners=8pt, line width=0.95pt, align=center},
+    flowboxteal/.style={draw=pgTeal!72!black, fill=pgMintBg, rounded corners=8pt, line width=0.95pt, align=center},
+    flowboxpurple/.style={draw=pgPurple!72!black, fill=pgLavenderBg, rounded corners=8pt, line width=0.95pt, align=center},
+    flowboxgreen/.style={draw=pgGreen!68!black, fill=pgGreenBg, rounded corners=8pt, line width=0.95pt, align=center},
+    flowlink/.style={-{Latex[length=3mm,width=2.2mm]}, line width=1.05pt, draw=pgBlue!80!black}
+}
+
+\pgfplotscreateplotcyclelist{plangraph}{
+    {draw=pgBlue, fill=pgBlue!60},
+    {draw=pgTeal!90!black, fill=pgTeal!65},
+    {draw=pgOrange!92!black, fill=pgOrange!72},
+    {draw=pgPurple, fill=pgPurple!52},
+    {draw=pgGreen!85!black, fill=pgGreen!55}
+}
+
+\pgfplotsset{
+    cycle list name=plangraph,
+    every axis/.append style={
+        axis line style={draw=black!60},
+        tick style={draw=black!55},
+        grid style={draw=black!12},
+        major grid style={draw=black!12},
+        label style={text=black!85},
+        tick label style={text=black!80}
+    }
+}
+% Mac系统取消以下两行代码的注释，
+% \usepackage{fontspec} % 加载 fontspec 宏包
+% \usepackage{xeCJK}    % 加载 xeCJK 宏包以支持中文
+\renewcommand{\thefootnote}{\ding{\numexpr171+\value{footnote}}}
+\begin{document}
+
+%% ----------------------------------------------------------------------------
+%%                                 Meta Data
+%% ----------------------------------------------------------------------------
+\categorynumber{TN92} %《中国图书资料分类法》分类法
+\UDC{004.8}              %《国际十进分类法UDC》的类号
+\secretlevel{公开}        % 学位论文密级分为"公开"、"内部"、"秘密"和"机密"四种
+\studentid{请填写学号}      % 学号要完整，前面的零不能省略
+
+%% ----------------------------------------------------------------------------
+%%                           Thesis Title and Spine
+%% ----------------------------------------------------------------------------
+\title
+    {基于规划反馈的图推理多智能体协同求解方法研究}        % 论文中文标题
+    {}         % 论文中文副标题，没有可以空着
+    {Research on Planning-Feedback-Based Multi-Agent Collaborative Solving Methods for Graph Reasoning}  % 论文英文标题
+    {}            % 论文英文副标题，没有可以空着
+
+\spine
+	% 书脊标题与副标题
+    {基于规划反馈的图推理多智能体协同求解方法研究} 
+    {}                                                               
+
+%% ----------------------------------------------------------------------------
+%%                             Author and Advidor
+%% ----------------------------------------------------------------------------
+\author
+    {王腾龙}                        % 作者中文姓名
+    {WANG Teng-long}                  % 作者英文姓名，首字母大写，姓名分开，双字用「-」连接
+
+\advisor
+    {林丽}                % 导师中文姓名
+    {LIN Li}        % 导师英文姓名
+    {}                     % 导师职称
+%% ----------------------------------------------------------------------------
+%%                              Thesis Defence
+%% ----------------------------------------------------------------------------
+\engthesistype{应用研究}            % 工程硕士论文类型
+\degreetype                        % 学位类型
+    {电子信息硕士}
+    {Master of Electronic Information}
+\major{人工智能}                 % 一级学科名
+\submajor{图推理与智能计算}             % 二级学科名
+\defenddate{2026年5月}          % 答辩日期 \today
+\authorizedate{}                  % 授予学位日期，这个档案袋不需要填
+\committeechair{}               % 答辩委员会主席姓名
+\reviewer{}{}                % 两位论文评阅人姓名
+\department                        % 学院名称
+    {苏州联合研究生院}
+    {Suzhou Joint Graduate School}
+% \seuthesisthanks                % 资助信息，没有可以不写
+%     {本文的部分工作受国家自然基金 No. zxgg666 的支持与帮助，在此表示感谢。}
+
+%garbagecoder: \let 是 TeX 的赋值命令，它会让 \cleardoublepage 变成 \clearpage，原模板限制奇偶页适用于双面打印，此命令用于去掉多余的空白页
+% \let\cleardoublepage\clearpage 
+
+%% ----------------------------------------------------------------------------
+%%                                  Cover
+%% ----------------------------------------------------------------------------
+% ⚠️ 可以在编写论文的时候注释掉封面，加快编译速度
+% % \makebigcover  % 生成A3大封面
+\makecover     % 生成小封面
+	 
+%% ----------------------------------------------------------------------------
+%%                          Abstract and Contents
+%% ----------------------------------------------------------------------------
+\input{chapters/abstract}
+\cleardoublepage
+\addcontentsline{toc}{chapter}{目　　录}
+\tableofcontents          % 生成目录
+\listofothers             % 生成图、表等目录，没有可以不写
+ 
+%% ----------------------------------------------------------------------------
+%%                                Main Body
+%% ----------------------------------------------------------------------------
+\mainmatter                    % 开始正文
+\input{chapters/chapter1}      % 第一章：
+\input{chapters/chapter2}      % 第二章：
+\input{chapters/chapter3}      % 第三章：
+\input{chapters/chapter4}      % 第四章：
+\input{chapters/chapter5}      % 第五章：
+\input{chapters/chapter6}      % 第六章：
+
+%% ----------------------------------------------------------------------------
+%%            Acknowledgement, Appendix, Bibliography and Resume
+%% ----------------------------------------------------------------------------
+\input{chapters/acknowledgement}    % 致谢
+\cleardoublepage
+\phantomsection
+\addcontentsline{toc}{chapter}{\bibname}
+\bibliographystyle{gbt7714-numerical}
+\bibliography{reference}            % 生成参考文献
+
+%% 下面一句只是用于提示 TexPad 参考文献位置，正式生成时一定要删除
+% \bibliography{reference.bib} % 告诉编译器参考文献所在文件
+
+\input{chapters/appendix}           % 附录
+\input{chapters/resume}             % 作者简介
+\input{chapters/Committees_list}    % 毕业/学位论文答辩委员会名单
+\end{document}

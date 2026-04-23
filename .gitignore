@@ -1,0 +1,63 @@
+cat > .gitignore <<'EOF'
+# macOS
+.DS_Store
+
+# Python
+__pycache__/
+*.pyc
+
+# Office temp
+~$*
+
+# ========================
+# LaTeX build garbage
+# ========================
+*.aux
+*.bbl
+*.blg
+*.fdb_latexmk
+*.fls
+*.log
+*.out
+*.synctex.gz
+*.toc
+*.lof
+*.lot
+*.lol
+*.bcf
+*.run.xml
+*.xdv
+*.nav
+*.snm
+*.vrb
+*.acn
+*.acr
+*.alg
+*.glg
+*.glo
+*.gls
+*.ist
+*.loa
+
+# ========================
+# Generated files (关键！)
+# ========================
+
+# 临时渲染
+tmp_pdf/
+tmp_render/
+tmp_render_ch4*/
+tmp_render_ch4b/
+tmp_render_ch4c/
+
+# 预览和中间图
+preview_figs/
+review_pages/
+
+# 不需要的PDF
+*.pdf
+
+# 保留论文最终PDF（如果你想）
+!thesis_final.pdf
+
+EOF

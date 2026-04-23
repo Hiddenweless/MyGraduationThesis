@@ -1,0 +1,118 @@
+% !TEX program = xelatex
+\documentclass[12pt]{ctexart}
+\usepackage[a4paper,margin=2.2cm]{geometry}
+\usepackage{enumitem}
+\usepackage{hyperref}
+\setlist[itemize]{leftmargin=1.8em}
+\title{PlanGraph 论文技术审查报告（重点：技术正确性与可复核性）}
+\author{paper-review skill}
+\date{2026-04-02}
+
+\begin{document}
+\maketitle
+
+\section*{总体评估}
+本文整体结构完整，研究动机、方法框架与实验覆盖范围较充分，具备硕士论文主体质量基础。当前主要风险不在“是否有结果”，而在“结果与证据链是否可复核、是否能在送审中经得起追问”。
+
+审查结论：\textbf{建议大修（Major Revision）后送审}。最关键的问题是：第5章存在“重构数据用于主结论”的叙述路径，且统计显著性、实验复现元信息、符号与模块命名一致性仍不够严格。
+
+\section*{技术审查（优先级从高到低）}
+
+\subsection*{1) 分层结果的证据等级与主结论绑定存在风险（Unsupported claim）}
+\textbf{位置：} \texttt{chapters/chapter5.tex:301--348}，尤其 \texttt{:303}。\\
+\textbf{问题：} 文中明确写到“原始细分运行日志未完整保留”，并对 GraphArena 分层结果进行“一致性重构”，但后续又将该分层数据用于“难任务增益”核心结论。\\
+\textbf{影响：} 这会在送审中触发“结果是否为实测”的可信度质疑，且与“可复核性”目标冲突。\\
+\textbf{建议修复：}
+\begin{itemize}
+  \item 方案A（推荐）：补跑并替换为真实分层实验，附运行配置与日志统计。
+  \item 方案B：保留重构数据，但降级为“趋势示意”，并在正文与结论中避免使用其作强结论证据。
+  \item 增加“数据来源分级表”（实测/复用/重构），逐表说明来源。
+\end{itemize}
+
+\subsection*{2) 统计显著性与随机性控制不足（Unsupported claim）}
+\textbf{位置：} \texttt{chapters/chapter5.tex:86--141, 171--192, 373--405, 432--450}。\\
+\textbf{问题：} 多处使用“显著提升/最明显”等结论性措辞，但缺少多次运行的方差、置信区间或显著性检验。\\
+\textbf{影响：} 由于 LLM 流程具随机性，单次点估计不足以支撑“显著”表述。\\
+\textbf{建议修复：}
+\begin{itemize}
+  \item 至少报告 \(n\ge 3\) 次重复结果（建议 \(n=5\)），给出 mean$\pm$std。
+  \item 对关键比较补 bootstrap CI 或 McNemar（二选一即可）。
+  \item 将“显著”改为“观察到/在当前设置下提升”。
+\end{itemize}
+
+\subsection*{3) 修复模块命名出现漂移（Notation/terminology drift）}
+\textbf{位置：} \texttt{chapters/chapter3.tex:175--181, 178} 与 \texttt{chapters/chapter4.tex:49--60}。\\
+\textbf{问题：} 第3章文本称“修复智能体”，但公式写为 \(\mathrm{ReasoningAgent}\)；第4章 I/O 协议表是“修复智能体”。\\
+\textbf{影响：} 会造成实现映射歧义（到底是推理代理还是修复代理）。\\
+\textbf{建议修复：} 统一为同一标识（如 \(\mathrm{RepairAgent}\)），并在首次出现处固定英文名/中文名对照。
+
+\subsection*{4) 排序公式存在实现不完备（Likely issue）}
+\textbf{位置：} \texttt{chapters/chapter4.tex:126--130}。\\
+\textbf{问题：} \(\mathrm{Rank}(k_i)\) 中使用 \(\lambda_1,\lambda_2,\lambda_3\) 与 \(\mathcal{C}\)，但未在本节给出约束（如非负、和为1）及 \(\mathcal{C}\) 的本地定义。\\
+\textbf{影响：} 公式可读但不可直接复现。\\
+\textbf{建议修复：} 增加定义：\(\lambda_j\ge 0,\sum_j \lambda_j=1\)，并声明 \(\mathcal{C}\) 来源（任务约束集合/规划抽取约束）。补“权重确定方式”（开发集网格搜索或人工设定）。
+
+\subsection*{5) 第5章章节结构存在逻辑断裂（Definite structural error）}
+\textbf{位置：} \texttt{chapters/chapter5.tex:462} 与 \texttt{chapters/chapter5.tex:704}。\\
+\textbf{问题：} 同章出现两次 \texttt{\textbackslash section\{本章小结\}}，且第一次出现在后续“消融实验/案例/误差分析”之前。\\
+\textbf{影响：} 破坏论证顺序，易被审稿人认为章节组织不严谨。\\
+\textbf{建议修复：} 保留末尾小结（\texttt{:704}），将前一处改为“阶段小结”或删除。
+
+\subsection*{6) 元数据仍有送审前占位项（Definite issue）}
+\textbf{位置：} \texttt{main.tex:31, 68--70}。\\
+\textbf{问题：} 仍有 \texttt{\textbackslash studentid\{请填写学号\}} 与空白答辩字段。\\
+\textbf{影响：} 影响最终提交规范性。\\
+\textbf{建议修复：} 在定稿前补全或按学院模板要求处理。
+
+\subsection*{7) 引文条目存在“占位符样式”高风险（Needs external verification）}
+\textbf{位置：} \texttt{reference.bib:89--149}（多条 arXiv 编号形如 \texttt{2401.00001/2402.00001/...}）。\\
+\textbf{问题：} 条目呈现明显“占位符模式”，存在与真实文献不匹配风险。\\
+\textbf{影响：} 属于送审高敏感问题，会直接影响学术可信度。\\
+\textbf{建议修复：} 逐条核对官方来源（arXiv/会议官网/DOI），替换为真实元数据；无法核对的条目降为“待核验”，避免进入最终送审稿。
+
+\section*{符号与一致性专项检查（按技能要求）}
+已显式检查公式、符号、实现表达与章节间一致性，包括：
+\begin{itemize}
+  \item \textbf{符号首次定义：} \(Q,G,T,P,K,C,A\) 在第3章首次定义整体清晰；
+  \item \textbf{符号漂移：} 主要问题为“修复代理命名漂移”（见技术问题3）；
+  \item \textbf{分支/符号约定：} 未发现反三角函数分支、正负号（sign）或量纲类明确数学错误；
+  \item \textbf{实现歧义：} 排序公式权重约束、约束集合来源未写全（见技术问题4）。
+\end{itemize}
+
+\section*{有意义编辑问题（非纯风格）}
+
+\subsection*{E1) “会议论文中的……”标题语气削弱学位论文独立性}
+\textbf{位置：} 如 \texttt{chapters/chapter5.tex:218, 569, 611}。\\
+\textbf{问题：} 图注直接写“会议论文中的……”，易引发“新增贡献边界不清”质疑。\\
+\textbf{建议：} 改为“来源于前期会议论文，本文复核后复用/重绘”，并补充“本章新增分析点”一句。
+
+\subsection*{E2) 方法与实验结论段存在过长复句，易掩盖技术重点}
+\textbf{位置：} 例如 \texttt{chapters/chapter5.tex:72--80, 141, 679--681}。\\
+\textbf{问题：} 单句承载多个因果关系，审稿阅读成本高。\\
+\textbf{建议：} 每句只保留一个核心判断（现象/原因/结论分句）。
+
+\section*{Proofing Sweep（强制模式扫描结果）}
+按技能要求已运行 \texttt{scripts/proofing\_scan.py}，对以下文件执行扫描：\texttt{abstract.tex, chapter1--6.tex, appendix.tex, reference.bib, IEEEfull.bib}。\\
+结果：\textbf{未发现}脚本覆盖规则下的高置信机械问题（双逗号、双句点、arctan 分支模式、JavaScript/iOS/iPhone 大小写等）。
+
+人工补充的高置信问题：
+\begin{itemize}
+  \item 章节结构重复小结（见技术问题5）；
+  \item 送审元数据占位（见技术问题6）。
+\end{itemize}
+
+\section*{最高优先级修改清单（建议先改这4项）}
+\begin{itemize}
+  \item \textbf{P1：} 处理第5章“重构数据”证据等级，避免其直接支撑核心结论。
+  \item \textbf{P2：} 补重复实验统计（mean$\pm$std + CI/显著性）并收紧措辞。
+  \item \textbf{P3：} 统一修复模块命名，补齐排序公式可复现定义。
+  \item \textbf{P4：} 修复第5章重复“本章小结”和主文件元数据占位。
+\end{itemize}
+
+\section*{需外部核验项（不要当作已证实错误）}
+\begin{itemize}
+  \item \texttt{reference.bib} 中多条 arXiv 编号与文献信息的对应关系。
+  \item GraphArena 原文中关于“P/NP + small/medium/large”分层描述与本文表述的一致性边界。
+\end{itemize}
+
+\end{document}

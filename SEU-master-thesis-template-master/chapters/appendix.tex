@@ -1,0 +1,127 @@
+\appendix
+
+\chapter{详细实验结果}
+\label{appendix:detailed_results}
+
+为与正文中的平均准确率结果相对应，本附录给出各 benchmark 的逐任务准确率统计，并结合任务表现差异进行简要分析，用于补充展示 PlanGraph 在不同任务类型上的具体表现。
+
+\section{GraphArena 逐任务结果}
+
+\begin{table}[H]
+\centering
+\caption{GraphArena 各任务准确率（\%）}
+\begin{tabular}{lcccc}
+\toprule
+任务 & GPT-4o & GraphTeam & GCoder & PlanGraph \\
+\midrule
+CN & 100.0 & 100.0 & 100.0 & 100.0 \\
+CC & 100.0 & 100.0 & 100.0 & 100.0 \\
+SD & 100.0 & 100.0 & 100.0 & 100.0 \\
+GD & 100.0 & 100.0 & 100.0 & 100.0 \\
+MIS & 22.4 & 97.8 & 96.8 & 98.8 \\
+MVC & 19.3 & 98.6 & 97.6 & 100.0 \\
+MCP & 12.5 & 90.5 & 88.7 & 100.0 \\
+MCS & 8.4 & 90.8 & 89.4 & 95.3 \\
+TSP & 4.9 & 82.7 & 80.7 & 86.8 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+从表中可以看出，GraphArena 中的基础结构任务对各强基线均已较容易，但在 MIS、MVC、MCP、MCS 和 TSP 等组合优化问题上，PlanGraph 仍表现出更显著优势。这说明规划和验证机制对约束更强的问题帮助更大。
+
+\section{NLGraph 逐任务结果}
+
+\begin{table}[H]
+\centering
+\caption{NLGraph 各任务准确率（\%）}
+\begin{tabular}{lcccc}
+\toprule
+任务 & GPT-4o & GraphTeam & GCoder & PlanGraph \\
+\midrule
+CONN & 92.10 & 100.0 & 100.0 & 100.0 \\
+MF & 67.30 & 93.67 & 94.10 & 97.53 \\
+CYC & 95.80 & 100.0 & 100.0 & 100.0 \\
+TOPO & 60.50 & 91.20 & 92.80 & 94.80 \\
+SP & 72.40 & 100.0 & 100.0 & 100.0 \\
+BM & 81.30 & 100.0 & 100.0 & 100.0 \\
+HP & 40.70 & 100.0 & 100.0 & 100.0 \\
+GNN & 52.10 & 96.80 & 97.40 & 97.40 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+在 NLGraph 上，PlanGraph 对最大流和拓扑排序这类需要算法步骤清晰展开的任务提升更为明显。对于已被现有方法充分解决的任务，PlanGraph 至少能维持同等水平，不会因多阶段流程带来明显退化。
+
+\section{GraphWiz 逐任务结果}
+
+\begin{table}[H]
+\centering
+\caption{GraphWiz 各任务准确率（\%）}
+\begin{tabular}{lcccc}
+\toprule
+任务 & GPT-4o & GraphTeam & GCoder & PlanGraph \\
+\midrule
+CYC & 95.00 & 100.0 & 100.0 & 100.0 \\
+CONN & 70.30 & 86.50 & 90.20 & 91.20 \\
+BIP & 82.70 & 96.30 & 98.00 & 100.0 \\
+TOPO & 75.20 & 100.0 & 100.0 & 96.50 \\
+SP & 78.60 & 95.00 & 96.40 & 98.50 \\
+MTS & 71.80 & 94.00 & 95.10 & 93.80 \\
+MF & 69.10 & 94.00 & 94.70 & 95.10 \\
+HP & 15.40 & 32.50 & 40.20 & 99.20 \\
+SM & 88.30 & 99.30 & 99.50 & 98.80 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+GraphWiz 中最值得关注的是 HP 任务，其对路径约束满足要求极高。PlanGraph 在该任务上远超对比方法，说明显式规划与程序验证对哈密顿路径类问题尤为有效。
+
+\section{LLM4DyG 逐任务结果}
+
+\begin{table}[H]
+\centering
+\small
+\caption{LLM4DyG 各任务准确率（\%）}
+\begin{tabular}{lccccc}
+\toprule
+任务 & GPT-4o & LLM4DyG & GraphTeam & GCoder & PlanGraph \\
+\midrule
+WL & 58.00 & 47.30 & 96.33 & 94.33 & 98.67 \\
+WC & 67.33 & 64.10 & 94.33 & 94.78 & 93.56 \\
+WTC & 87.67 & 63.00 & 100.00 & 97.08 & 100.00 \\
+NT & 33.33 & 45.90 & 95.33 & 94.74 & 97.47 \\
+NP & 44.67 & 20.00 & 100.00 & 94.83 & 100.00 \\
+CTC & 77.33 & 66.70 & 99.67 & 100.00 & 99.33 \\
+CTP & 57.67 & 59.80 & 87.00 & 100.00 & 92.03 \\
+FTP & 46.67 & 80.80 & 81.00 & 74.58 & 84.57 \\
+SE & 49.67 & 35.80 & 99.67 & 93.67 & 99.33 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+可以看到，PlanGraph 在 WL、NT、NP 和 SE 等任务上优势明显，但在 CTP 等部分任务上仍低于 GCoder。这一现象说明动态图问题内部也存在明显异质性，尤其是需要更细粒度时间建模的任务仍值得进一步研究。
+
+\section{GraphInstruct 逐任务结果}
+
+\begin{table}[H]
+\centering
+\small
+\caption{GraphInstruct 各任务准确率（\%）}
+\begin{tabular}{lccccc}
+\toprule
+任务 & GPT-4o & GraphInstruct & GraphTeam & GCoder & PlanGraph \\
+\midrule
+NB & 98.00 & 99.00 & 100.00 & 99.53 & 100.00 \\
+BIP & 89.67 & 85.00 & 99.00 & 100.00 & 100.00 \\
+EDGE & 90.67 & 84.00 & 99.33 & 97.47 & 98.63 \\
+CONN & 92.22 & 83.00 & 100.00 & 100.00 & 100.00 \\
+DEG & 98.00 & 81.00 & 100.00 & 98.67 & 100.00 \\
+DFS & 89.33 & 46.00 & 95.67 & 94.33 & 96.33 \\
+PRED & 47.41 & 41.00 & 98.00 & 99.75 & 99.75 \\
+TOPO & 59.00 & 33.00 & 98.33 & 99.50 & 99.25 \\
+CC & 39.30 & 83.00 & 94.67 & 83.30 & 94.74 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+GraphInstruct 主要考察图指令执行能力。PlanGraph 在大多数任务上与最优方法持平或更优，说明所提框架不仅能处理复杂求解型任务，也能处理相对基础但格式要求极严的图查询任务。
