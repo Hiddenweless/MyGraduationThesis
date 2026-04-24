@@ -262,7 +262,7 @@ C'_0\leftarrow \mathrm{CodingAgent}(P,K,F_{1:t}).
 
 \subsection{反馈驱动的协同求解流程}
 
-综合上述过程，算法\ref{alg:plangraph}给出了本文方法的完整推理流程。该算法体现了规划反馈的基本思想：先通过规划确定求解路线，再通过检索补充实现知识，随后在执行验证中不断根据反馈修复候选程序。当错误反馈表明下游实现问题时，系统进行局部修复；当错误反馈指向知识缺失或规划遗漏时，系统才回退到相应上游阶段。
+综合上述过程，算法\ref{alg:plangraph}给出了本文方法的完整推理流程。该算法体现了规划反馈的基本思想：先通过规划确定求解路线，再通过检索补充实现知识，随后在执行验证中不断根据反馈修复候选程序。当错误反馈表明下游实现问题时，系统进行局部修复；当错误反馈指向知识缺失或规划遗漏时，系统才回退到相应上游阶段。其中，$\mathrm{SearchAndCorrect}$ 表示检索智能体先根据规划构造查询并召回候选知识，再进行质量评估；若质量低于阈值，则执行知识片段精炼、查询重写或补充检索。
 
 \begin{algorithm}[htbp]
 \caption{基于规划反馈的图推理协同求解流程}
@@ -272,11 +272,7 @@ C'_0\leftarrow \mathrm{CodingAgent}(P,K,F_{1:t}).
 \Ensure 最终答案 $A$
 \State $(T,G) \gets \mathrm{QuestionAgent}(Q)$
 \State $P \gets \mathrm{PlanningAgent}(T)$
-\State $K \gets \mathrm{SearchAgent}(P,T)$
-\State $\rho \gets \mathrm{EvaluateRetrieval}(K,P,T)$
-\If{$\rho < \tau_{\mathrm{retr}}$}
-    \State $K \gets \mathrm{CorrectRetrieval}(K,P,T)$
-\EndIf
+\State $K \gets \mathrm{SearchAndCorrect}(P,T)$
 \State $C \gets \mathrm{CodingAgent}(P,K)$
 \For{$t=1$ to $T_{\max}$}
     \State $F_t \gets \mathrm{ExecuteVerify}(C,\mathcal{D}_{val},P)$
@@ -287,19 +283,11 @@ C'_0\leftarrow \mathrm{CodingAgent}(P,K,F_{1:t}).
     \ElsIf{$F_t$ 指向局部实现错误}
         \State $C \gets \mathrm{ReasoningAgent}(C,F_t,P,K)$
     \ElsIf{$F_t$ 指向知识不匹配}
-        \State $K \gets \mathrm{SearchAgent}(P,T,F_t)$
-        \State $\rho \gets \mathrm{EvaluateRetrieval}(K,P,T,F_t)$
-        \If{$\rho < \tau_{\mathrm{retr}}$}
-            \State $K \gets \mathrm{CorrectRetrieval}(K,P,T,F_t)$
-        \EndIf
+        \State $K \gets \mathrm{SearchAndCorrect}(P,T,F_t)$
         \State $C \gets \mathrm{ReasoningAgent}(C,F_t,P,K)$
     \ElsIf{$F_t$ 指向规划遗漏}
         \State $P \gets \mathrm{PlanningAgent}(T,F_t)$
-        \State $K \gets \mathrm{SearchAgent}(P,T)$
-        \State $\rho \gets \mathrm{EvaluateRetrieval}(K,P,T)$
-        \If{$\rho < \tau_{\mathrm{retr}}$}
-            \State $K \gets \mathrm{CorrectRetrieval}(K,P,T)$
-        \EndIf
+        \State $K \gets \mathrm{SearchAndCorrect}(P,T)$
         \State $C \gets \mathrm{CodingAgent}(P,K)$
     \EndIf
     \If{局部修复达到上限}
