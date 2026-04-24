@@ -3,13 +3,16 @@
 \chapter{详细实验结果}
 \label{appendix:detailed_results}
 
-为与正文中的平均准确率结果相对应，本附录给出各 benchmark 的逐任务准确率统计，并结合任务表现差异进行简要分析，用于补充展示 PlanGraph 在不同任务类型上的具体表现。
+为与正文中的平均精确匹配率结果相对应，本附录进一步给出各基准测试集的逐任务精确匹配率统计，并结合数据集特点对结果差异进行补充分析。整体组织遵循数据集介绍段—逐任务结果表—结果分析段的结构，以便将正文中的平均结果展开到更细粒度的任务层面，从而更完整地展示 PlanGraph 在不同图推理场景中的表现。
 
 \section{GraphArena 逐任务结果}
 
+GraphArena 是面向图计算与图推理任务的综合基准测试集，覆盖连通性、距离计算、独立集、点覆盖、团、割以及旅行商等多种经典问题，其中既包含基础结构判断任务，也包含约束显式、搜索空间较大的组合优化任务\cite{tang2025grapharena}。这类数据集的特点在于任务跨度较大，能够较好地区分基础图结构识别能力和高约束图求解能力两类水平。表~\ref{tab:appendix_grapharena} 给出了各方法在该基准测试集各子任务上的逐项结果。
+
 \begin{table}[H]
 \centering
-\caption{GraphArena 各任务准确率（\%）}
+\caption{GraphArena 各任务精确匹配率（\%）}
+\label{tab:appendix_grapharena}
 \begin{tabular}{lcccc}
 \toprule
 任务 & GPT-4o & GraphTeam & GCoder & PlanGraph \\
@@ -27,13 +30,16 @@ TSP & 4.9 & 82.7 & 80.7 & 86.8 \\
 \end{tabular}
 \end{table}
 
-从表中可以看出，GraphArena 中的基础结构任务对各强基线均已较容易，但在 MIS、MVC、MCP、MCS 和 TSP 等组合优化问题上，PlanGraph 仍表现出更显著优势。这说明规划和验证机制对约束更强的问题帮助更大。
+从表~\ref{tab:appendix_grapharena}可以看出，GraphArena 中的基础结构任务对各强基线均已较为容易，CN、CC、SD 和 GD 等子任务几乎都达到满分；真正拉开差距的是 MIS、MVC、MCP、MCS 和 TSP 等组合优化问题。PlanGraph 在这些高约束任务上仍保持更优结果，说明规划生成、知识检索和执行验证的闭环机制并不是简单提升简单题的天花板，而是更有效地改善了复杂图搜索任务中的可行性控制与错误修复能力。
 
 \section{NLGraph 逐任务结果}
 
+NLGraph 主要考察自然语言条件下的图算法推理能力，其核心难点并不只在于调用某个图算法，而在于先从自然语言描述中恢复图结构、任务目标和求解约束，再完成相应的算法推理\cite{chen2024nlgraph}。因此，该基准测试集对任务语义解析和算法意图识别提出了更高要求。表~\ref{tab:appendix_nlgraph} 给出了各方法在 NLGraph 各子任务上的逐项结果。
+
 \begin{table}[H]
 \centering
-\caption{NLGraph 各任务准确率（\%）}
+\caption{NLGraph 各任务精确匹配率（\%）}
+\label{tab:appendix_nlgraph}
 \begin{tabular}{lcccc}
 \toprule
 任务 & GPT-4o & GraphTeam & GCoder & PlanGraph \\
@@ -50,13 +56,16 @@ GNN & 52.10 & 96.80 & 97.40 & 97.40 \\
 \end{tabular}
 \end{table}
 
-在 NLGraph 上，PlanGraph 对最大流和拓扑排序这类需要算法步骤清晰展开的任务提升更为明显。对于已被现有方法充分解决的任务，PlanGraph 至少能维持同等水平，不会因多阶段流程带来明显退化。
+在 NLGraph 上，PlanGraph 对最大流和拓扑排序这类需要算法步骤清晰展开的任务提升更为明显，而在连通性、最短路径、二分匹配和哈密顿路径等已被现有方法较好解决的任务上也至少保持同等水平。结合数据集特点可以看出，PlanGraph 的优势主要体现在把自然语言问题稳定映射到可执行图求解过程这一环节上，即先通过规划抽取任务结构，再利用程序验证约束答案形式，从而降低因语义歧义或步骤遗漏带来的错误。
 
 \section{GraphWiz 逐任务结果}
 
+GraphWiz 是面向指令式图推理场景构建的基准测试集，强调模型在给定图操作指令或求解要求时，能否稳定完成从任务理解到结果生成的全过程\cite{gong2024graphwiz}。与更偏结构问答的数据集相比，GraphWiz 更突出流程化求解和输出一致性，因此较适合观察规划与程序执行机制在复杂任务上的作用。表~\ref{tab:appendix_graphwiz} 给出了各方法在该基准测试集各子任务上的逐项结果。
+
 \begin{table}[H]
 \centering
-\caption{GraphWiz 各任务准确率（\%）}
+\caption{GraphWiz 各任务精确匹配率（\%）}
+\label{tab:appendix_graphwiz}
 \begin{tabular}{lcccc}
 \toprule
 任务 & GPT-4o & GraphTeam & GCoder & PlanGraph \\
@@ -74,14 +83,17 @@ SM & 88.30 & 99.30 & 99.50 & 98.80 \\
 \end{tabular}
 \end{table}
 
-GraphWiz 中最值得关注的是 HP 任务，其对路径约束满足要求极高。PlanGraph 在该任务上远超对比方法，说明显式规划与程序验证对哈密顿路径类问题尤为有效。
+GraphWiz 中最值得关注的是 HP 任务，其对路径约束满足要求极高。PlanGraph 在该任务上远超对比方法，说明显式规划与程序验证对哈密顿路径类问题尤为有效。与此同时，在 CONN、SP 和 MF 等需要稳定图构建与步骤执行的任务上，PlanGraph 也保持了较强竞争力；只有在 TOPO、MTS 和 SM 等少数任务上未取得最优。这说明该方法的主要收益仍集中在约束敏感且容易因一步出错而整体失效的任务类型上。
 
 \section{LLM4DyG 逐任务结果}
+
+LLM4DyG 聚焦动态图与时间约束场景，任务通常要求模型同时处理图结构变化、时间顺序以及事件依赖关系，因此比静态图基准测试集更强调时序建模与动态状态更新\cite{llm4dyg2024}。这类任务能够较好地检验规划反馈方法在复杂状态演化条件下的适用性。表~\ref{tab:appendix_llm4dyg} 给出了各方法在 LLM4DyG 各子任务上的逐项结果。
 
 \begin{table}[H]
 \centering
 \small
-\caption{LLM4DyG 各任务准确率（\%）}
+\caption{LLM4DyG 各任务精确匹配率（\%）}
+\label{tab:appendix_llm4dyg}
 \begin{tabular}{lccccc}
 \toprule
 任务 & GPT-4o & LLM4DyG & GraphTeam & GCoder & PlanGraph \\
@@ -99,14 +111,17 @@ SE & 49.67 & 35.80 & 99.67 & 93.67 & 99.33 \\
 \end{tabular}
 \end{table}
 
-可以看到，PlanGraph 在 WL、NT、NP 和 SE 等任务上优势明显，但在 CTP 等部分任务上仍低于 GCoder。这一现象说明动态图问题内部也存在明显异质性，尤其是需要更细粒度时间建模的任务仍值得进一步研究。
+可以看到，PlanGraph 在 WL、NT、NP 和 SE 等任务上优势明显，但在 WC、CTC 与 CTP 等部分任务上仍未全面超过最优对比方法。这一现象说明动态图问题内部也存在明显异质性：当任务更依赖图结构约束与过程验证时，规划反馈闭环的收益更突出；而当任务需要更细粒度的时间建模或连续状态跟踪时，当前方法仍有进一步优化空间。这一结果也与正文中对 LLM4DyG 整体表现的分析保持一致。
 
 \section{GraphInstruct 逐任务结果}
+
+GraphInstruct 面向图指令跟随场景，强调模型能否根据任务指令稳定完成邻居查询、边判断、连通性分析、遍历与拓扑排序等基础图操作\cite{graphinstruct2024}。与以复杂组合优化为主的数据集相比，该基准测试集更强调指令理解、输出格式一致性以及基础图操作的稳健性。表~\ref{tab:appendix_graphinstruct} 给出了各方法在该基准测试集各子任务上的逐项结果。
 
 \begin{table}[H]
 \centering
 \small
-\caption{GraphInstruct 各任务准确率（\%）}
+\caption{GraphInstruct 各任务精确匹配率（\%）}
+\label{tab:appendix_graphinstruct}
 \begin{tabular}{lccccc}
 \toprule
 任务 & GPT-4o & GraphInstruct & GraphTeam & GCoder & PlanGraph \\
@@ -124,4 +139,4 @@ CC & 39.30 & 83.00 & 94.67 & 83.30 & 94.74 \\
 \end{tabular}
 \end{table}
 
-GraphInstruct 主要考察图指令执行能力。PlanGraph 在大多数任务上与最优方法持平或更优，说明所提框架不仅能处理复杂求解型任务，也能处理相对基础但格式要求极严的图查询任务。
+GraphInstruct 主要考察图指令执行能力。PlanGraph 在大多数任务上与最优方法持平或更优，尤其在 NB、BIP、CONN、DEG 和 DFS 等任务上表现稳定，说明所提框架不仅能处理复杂求解型任务，也能处理相对基础但格式要求极严的图查询任务。与此同时，TOPO 和 CC 等任务上仍存在与最优方法的轻微差距，这表明在面向高规范性输出的基础图指令场景中，后续仍可围绕输出约束建模与轻量验证策略继续改进。
