@@ -136,7 +136,7 @@ def draw_difficulty_scale() -> None:
     base_np = np.array([99.20, 92.50])
     plan_np = np.array([99.60, 96.50])
 
-    scales = ["Small", "Medium", "Large"]
+    scales = ["小规模", "中规模", "大规模"]
     base_scale = np.array([97.00, 95.20, 92.40])
     plan_scale = np.array([99.10, 98.00, 96.30])
 
