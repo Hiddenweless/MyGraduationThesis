@@ -20,29 +20,35 @@
 
 本文选取五个具有代表性的图推理基准测试集进行评估，分别为 GraphArena、NLGraph、GraphWiz、LLM4DyG 和 GraphInstruct\cite{tang2025grapharena,chen2024nlgraph,gong2024graphwiz,llm4dyg2024,graphinstruct2024}。这些数据集覆盖了经典图算法、组合优化、指令跟随以及动态图推理等不同场景。
 
-按照各基准测试集默认设置，主实验统一采用精确匹配率（Exact Match, EM）作为总体性能指标。
+\begin{itemize}
+    \item \textbf{GraphArena：} 包含连通性、最短距离、最大独立集、最小点覆盖、最大团、最小割和旅行商等任务，综合性较强。
+    \item \textbf{NLGraph：} 强调自然语言条件下的图算法推理，涉及连通性、最大流、环检测、拓扑排序和双边匹配等问题。
+    \item \textbf{GraphWiz：} 面向指令式图推理，覆盖二分图判断、最短路径、最大生成树、哈密顿路径和子图匹配等任务。
+    \item \textbf{LLM4DyG：} 聚焦动态图或含时间约束的图推理问题，对模型的时序理解与图结构联动能力提出更高要求。
+    \item \textbf{GraphInstruct：} 关注图指令跟随场景，包含邻居查询、前驱节点、深度优先遍历和拓扑排序等基础任务。
+\end{itemize}
 
-为了更清晰地说明各基准测试集的差异，本文进一步从任务目标、输入形式、是否强调动态约束以及是否依赖严格输出格式四个维度进行总结，如表~\ref{tab:benchmark_characteristics}所示。
+不同基准测试集的任务数量、样本规模和划分方式并不完全一致。为避免将不同基准测试集的统计口径混同，本文将各数据集的基本统计信息汇总如表~\ref{tab:benchmark_statistics}所示。主实验统一采用精确匹配率（Exact Match, EM）作为总体性能指标。
 
 \begin{table}[htbp]
 \centering
 \small
-\caption{五个图推理基准测试集的特征对比}
-\label{tab:benchmark_characteristics}
-\begin{tabular}{m{2.8cm}m{3.2cm}m{2.5cm}m{2cm}m{2.2cm}}
+\caption{五个图推理基准测试集的统计信息}
+\label{tab:benchmark_statistics}
+\begin{tabular}{lccc p{5.2cm}}
 \toprule
-数据集 & 主要任务类型 & 输入特点 & 动态约束 & 输出规范性 \\
+数据集 & 任务数 & 评测样本数 & 难度/划分方式 & 统计口径说明 \\
 \midrule
-GraphArena & 经典图算法与组合优化 & 结构明确、任务跨度大 & 否 & 高 \\
-NLGraph & 自然语言图算法问题 & 自然语言表达较强 & 否 & 高 \\
-GraphWiz & 指令式图操作与算法任务 & 指令驱动、流程导向 & 否 & 中 \\
-LLM4DyG & 动态图与时间约束推理 & 含时序关系与事件变化 & 是 & 高 \\
-GraphInstruct & 基础图指令跟随任务 & 查询式、操作式混合 & 否 & 高 \\
+GraphArena & 10 & 10000 & easy/hard & 每个任务 easy 与 hard 各 500 条；examples 不计入正式评测 \\
+NLGraph & 8 & 1000 & easy/medium/hard 不完全覆盖 & test 集共 1000 条；部分任务包含 medium，部分任务仅含 easy/hard \\
+GraphWiz & 9 & 3600 & 无统一难度桶 & 每个任务 400 条测试样本，主要按任务类型与复杂度类别组织 \\
+LLM4DyG & 9 & 900 & 动态图参数设置 & 单一固定动态图设置下每个任务 100 条，按 $N$、$p$、$T$ 等参数组织 \\
+GraphInstruct & 21 & 2100 & in-domain/out-of-domain & 每个核心任务 100 条测试样本，其中包含 17 个 in-domain 任务和 4 个 out-of-domain 任务 \\
 \bottomrule
 \end{tabular}
 \end{table}
 
-由表~\ref{tab:benchmark_characteristics}可以看出，五个数据集并非仅仅是任务名称不同，而是在输入表述形式、结构复杂度和约束模式上均存在差异。GraphArena 更偏向求解型任务，NLGraph 更强调从自然语言中还原算法意图，GraphWiz 和 GraphInstruct 更注重指令执行一致性，而 LLM4DyG 则引入了动态时序依赖。因此，若一种方法能够在这些基准测试集上都保持较强性能，则说明其不仅对某一类提示模板有效，而是具备较好的跨任务泛化能力。
+由表~\ref{tab:benchmark_statistics}可见，五个基准测试集在任务数量和样本组织方式上存在差异。因此，本文在实验统计时遵循各基准测试集自身的评测口径，并在总体结果中按照对应测试样本集合计算精确匹配率。
 
 \subsection{对比方法与实现设置}
 
