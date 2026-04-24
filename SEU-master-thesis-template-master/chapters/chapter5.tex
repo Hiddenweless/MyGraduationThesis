@@ -39,11 +39,11 @@
 \toprule
 数据集 & 任务数 & 评测样本数 & 难度/划分方式 & 统计口径说明 \\
 \midrule
-GraphArena & 10 & 10000 & easy/hard & 每个任务 easy 与 hard 各 500 条；examples 不计入正式评测 \\
-NLGraph & 8 & 1000 & easy/medium/hard 不完全覆盖 & test 集共 1000 条；部分任务包含 medium，部分任务仅含 easy/hard \\
-GraphWiz & 9 & 3600 & 无统一难度桶 & 每个任务 400 条测试样本，主要按任务类型与复杂度类别组织 \\
-LLM4DyG & 9 & 900 & 动态图参数设置 & 单一固定动态图设置下每个任务 100 条，按 $N$、$p$、$T$ 等参数组织 \\
-GraphInstruct & 21 & 2100 & in-domain/out-of-domain & 每个核心任务 100 条测试样本，其中包含 17 个 in-domain 任务和 4 个 out-of-domain 任务 \\
+GraphArena & 10 & 10000 & easy/hard & 每任务 easy/hard 各 500 个正式评测样本 \\
+NLGraph & 8 & 1000 & difficulty 字段 & 使用公开 test 集，部分任务含 medium 难度 \\
+GraphWiz & 9 & 3600 & 任务复杂度类别 & 每任务 400 个测试样本 \\
+LLM4DyG & 9 & 900 & 动态图参数 & 单一固定动态图设置下每任务 100 个样本 \\
+GraphInstruct & 21 & 2100 & in/out-domain & 21 个核心任务各 100 个测试样本 \\
 \bottomrule
 \end{tabular}
 \end{table}
@@ -106,7 +106,7 @@ GraphInstruct & 21 & 2100 & in-domain/out-of-domain & 每个核心任务 100 条
 
 \subsection{总体性能对比}
 
-表~\ref{tab:overall_result}给出了 PlanGraph 在五个图推理基准测试集上的总体精确匹配率结果。可以看出，PlanGraph 在五个基准测试集中有四个取得最优结果，平均精确匹配率达到 97.69\%，相比最佳对比基线提升 2.07 个百分点。
+表~\ref{tab:overall_result}给出了 PlanGraph 在统一评测集合上的总体精确匹配率结果，其中“任务数”表示本文实际纳入主实验统计的任务类别数量。可以看出，PlanGraph 在五个基准测试集中有四个取得最优结果，平均精确匹配率达到 97.69\%，相比最佳对比基线提升 2.07 个百分点。
 
 \begin{table}[htbp]
 \centering
