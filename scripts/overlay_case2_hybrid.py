@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import itertools
+import base64
 from pathlib import Path
 
 from PIL import Image, ImageDraw, ImageFont
@@ -162,10 +163,24 @@ def main():
     draw_answer(draw, best_path, best_cost)
     png = OUT_DIR / "case2_hybrid_preview.png"
     pdf = OUT_DIR / "case2_hybrid_preview.pdf"
+    svg = OUT_DIR / "case2_hybrid_preview.svg"
+    paper_svg = THESIS / "figures" / "paper" / "case2.svg"
     img.save(png)
     img.convert("RGB").save(pdf, "PDF", resolution=300.0)
+    encoded = base64.b64encode(png.read_bytes()).decode("ascii")
+    svg_text = (
+        f'<svg xmlns="http://www.w3.org/2000/svg" width="{img.width}" height="{img.height}" '
+        f'viewBox="0 0 {img.width} {img.height}">\n'
+        f'  <image width="{img.width}" height="{img.height}" '
+        f'href="data:image/png;base64,{encoded}"/>\n'
+        f'</svg>\n'
+    )
+    svg.write_text(svg_text, encoding="utf-8")
+    paper_svg.write_text(svg_text, encoding="utf-8")
     print(f"saved: {png}")
     print(f"saved: {pdf}")
+    print(f"saved: {svg}")
+    print(f"saved: {paper_svg}")
     print("best route:", " -> ".join(best_path), "cost =", best_cost)
 
 
