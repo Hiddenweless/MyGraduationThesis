@@ -273,6 +273,10 @@ C'_0\leftarrow \mathrm{CodingAgent}(P,K,F_{1:t}).
 \State $(T,G) \gets \mathrm{QuestionAgent}(Q)$
 \State $P \gets \mathrm{PlanningAgent}(T)$
 \State $K \gets \mathrm{SearchAgent}(P,T)$
+\State $\rho \gets \mathrm{EvaluateRetrieval}(K,P,T)$
+\If{$\rho < \tau_{\mathrm{retr}}$}
+    \State $K \gets \mathrm{CorrectRetrieval}(K,P,T)$
+\EndIf
 \State $C \gets \mathrm{CodingAgent}(P,K)$
 \For{$t=1$ to $T_{\max}$}
     \State $F_t \gets \mathrm{ExecuteVerify}(C,\mathcal{D}_{val},P)$
@@ -284,10 +288,18 @@ C'_0\leftarrow \mathrm{CodingAgent}(P,K,F_{1:t}).
         \State $C \gets \mathrm{ReasoningAgent}(C,F_t,P,K)$
     \ElsIf{$F_t$ 指向知识不匹配}
         \State $K \gets \mathrm{SearchAgent}(P,T,F_t)$
+        \State $\rho \gets \mathrm{EvaluateRetrieval}(K,P,T,F_t)$
+        \If{$\rho < \tau_{\mathrm{retr}}$}
+            \State $K \gets \mathrm{CorrectRetrieval}(K,P,T,F_t)$
+        \EndIf
         \State $C \gets \mathrm{ReasoningAgent}(C,F_t,P,K)$
     \ElsIf{$F_t$ 指向规划遗漏}
         \State $P \gets \mathrm{PlanningAgent}(T,F_t)$
         \State $K \gets \mathrm{SearchAgent}(P,T)$
+        \State $\rho \gets \mathrm{EvaluateRetrieval}(K,P,T)$
+        \If{$\rho < \tau_{\mathrm{retr}}$}
+            \State $K \gets \mathrm{CorrectRetrieval}(K,P,T)$
+        \EndIf
         \State $C \gets \mathrm{CodingAgent}(P,K)$
     \EndIf
     \If{局部修复达到上限}
