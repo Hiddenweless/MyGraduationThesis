@@ -136,7 +136,7 @@ def draw_difficulty_scale() -> None:
     base_np = np.array([99.20, 92.50])
     plan_np = np.array([99.60, 96.50])
 
-    scales = ["小规模", "中规模", "大规模"]
+    scales = ["简单", "中等", "困难"]
     base_scale = np.array([97.00, 95.20, 92.40])
     plan_scale = np.array([99.10, 98.00, 96.30])
 
@@ -164,7 +164,7 @@ def draw_difficulty_scale() -> None:
     ax.fill_between(x, base_scale, plan_scale, color=COLORS["blue"], alpha=0.10)
     ax.set_xticks(x)
     ax.set_xticklabels(scales)
-    ax.set_title("图规模分层", fontsize=12.2, fontweight="bold", color=COLORS["ink"], pad=16)
+    ax.set_title("样本难度分层", fontsize=12.2, fontweight="bold", color=COLORS["ink"], pad=16)
     for i, gain in enumerate(plan_scale - base_scale):
         ax.text(i, plan_scale[i] + 0.45, f"+{gain:.1f}", ha="center", va="bottom", fontsize=8.2, color=COLORS["blue_dark"], fontweight="bold")
 
