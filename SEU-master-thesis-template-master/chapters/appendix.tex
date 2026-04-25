@@ -140,3 +140,135 @@ CC & 39.30 & 83.00 & 94.67 & 83.30 & 94.74 \\
 \end{table}
 
 GraphInstruct 主要考察图指令执行能力。PlanGraph 在大多数任务上与最优方法持平或更优，尤其在 NB、BIP、CONN、DEG 和 DFS 等任务上表现稳定，说明所提框架不仅能处理复杂求解型任务，也能处理相对基础但格式要求极严的图查询任务。与此同时，TOPO 和 CC 等任务上仍存在与最优方法的轻微差距，这表明在面向高规范性输出的基础图指令场景中，后续仍可围绕输出约束建模与轻量验证策略继续改进。
+
+
+\chapter{智能体提示词与检索查询模板}
+\label{appendix:prompt_templates}
+
+为保证本文所提 PlanGraph 系统的可复现性，同时避免在附录中直接堆叠过长的工程提示词文本，本附录对系统中使用的智能体提示词和检索查询模板进行摘要性说明。需要说明的是，PlanGraph 中并非所有模板都会直接发送给大语言模型。其中，QuestionAgent、PlanningAgent、CodingAgent 和 RepairAgent 采用提示词驱动；RetrievalAgent 不调用大语言模型，而是根据规划工件、任务约束和执行反馈构造检索查询。本文仅列出各模板的核心输入、输出和行为约束，完整模板在实验代码中固定保存。
+
+\section{提示词与查询模板设计原则}
+
+PlanGraph 的提示词设计围绕图推理任务中的结构解析、算法规划、程序生成和反馈修复展开。与通用问答式提示不同，本文提示词更强调中间工件的结构化表达和系统阶段之间的信息一致性。QuestionAgent 和 PlanningAgent 均要求以 JSON 形式输出中间结果，使任务结构、图属性、算法提示和约束条件能够被后续模块稳定读取，减少自然语言描述在多阶段传递中的语义漂移。
+
+在检索阶段，PlanningAgent 生成的规划结果不仅用于指导程序生成，也用于支持检索查询构造。RetrievalAgent 根据任务类型、算法提示、约束标签和执行反馈组织查询，使外部知识检索不再直接依赖原始问题文本，而是围绕当前求解步骤和任务约束展开。在程序生成与修复阶段，CodingAgent 和 RepairAgent 均要求程序基于运行时变量 \texttt{graph\_data} 构建图结构，不允许将提示词中的节点、边或权重直接硬编码进程序，从而避免在样本迁移和重复运行中出现实例绑定错误。
+
+此外，RepairAgent 接收当前代码、执行反馈和检索反馈，在不改变输入接口的前提下修复程序错误。该设计使程序生成过程从一次性生成转变为可验证、可修复的闭环过程。
+
+\section{智能体模板概要}
+
+表~\ref{tab:agent_prompt_summary} 给出了 PlanGraph 中主要智能体模板的输入、输出和关键约束。该表仅概括各模板的功能边界，后续小节进一步给出提示词和查询模板的摘要形式。
+
+\begin{table}[htbp]
+\centering
+\caption{PlanGraph 中智能体提示词与查询模板概要}
+\label{tab:agent_prompt_summary}
+\begin{tabular}{p{2.2cm}p{3.2cm}p{3.2cm}p{4.8cm}}
+\toprule
+模块 & 输入 & 输出 & 关键约束 \\
+\midrule
+QuestionAgent &
+原始自然语言问题 &
+结构化任务 JSON &
+抽取任务类型、节点、边、方向性、权重、容量、参数、输出格式和约束条件 \\
+
+PlanningAgent &
+结构化任务 JSON &
+算法级规划 JSON &
+生成伪代码、算法提示、约束标签和检索术语；不生成 Python 代码；不复制具体图实例 \\
+
+RetrievalAgent &
+任务类型、规划、算法提示、约束标签、执行反馈 &
+候选知识片段 &
+不调用大语言模型；根据多层查询模板进行检索，并结合任务标签与约束一致性排序 \\
+
+CodingAgent &
+任务、规划、检索知识 &
+可执行 Python 程序 &
+基于 \texttt{graph\_data} 构图；只使用标准库和 NetworkX；禁止硬编码；只输出最终答案 \\
+
+RepairAgent &
+当前代码、执行反馈、规划、检索知识 &
+修复后的 Python 程序 &
+保持 \texttt{graph\_data} 输入接口不变；根据错误类型、约束缺失和 API 使用问题进行修复 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\section{检索查询模板摘要}
+
+RetrievalAgent 不通过大语言模型生成回答，而是根据规划结果和系统反馈构造多层查询。其查询构造逻辑可以概括为若干层次：初始查询由任务类型和图属性构成，用于定位基本图算法类别；规划查询由伪代码中的关键动作和算法提示构成，用于匹配具体算法或 API；约束查询由约束标签和输出格式构成，用于过滤与当前任务不一致的候选知识；当检索结果覆盖不足时，系统根据缺失约束生成补充查询；当程序执行失败时，系统进一步结合错误类型、失败 API 和修复目标生成面向修复的查询。
+
+\begin{quote}
+\small
+\ttfamily
+Q0 = task\_type + graph attributes\\
+Q1 = key actions from pseudocode + algorithm\_hints\\
+Q2 = constraint\_tags + output\_format\\
+Q3 = retrieval gaps or low-coverage constraints\\
+Q4 = execution error type + failed API + repair target\\
+Ranking = semantic relevance + task-tag matching + constraint consistency
+\end{quote}
+
+上述查询模板使检索过程能够同时利用任务目标、算法规划、图属性和执行反馈。与直接使用原始问题检索相比，该方式能够降低背景文本和冗余图数据对检索结果的干扰，使候选知识更贴近后续程序生成所需的算法步骤。
+
+\section{核心提示词模板摘要}
+
+为避免附录篇幅过长，本文仅给出各智能体提示词的核心约束。实际实现中，各模板还包含输出格式检查、异常处理说明和少量工程性约束。
+
+\paragraph{QuestionAgent 模板摘要。}
+该模板用于将原始自然语言问题解析为结构化图推理任务，要求模型输出严格 JSON。主要字段包括 \texttt{task\_type}、\texttt{nodes}、\texttt{edges}、\texttt{directed}、\texttt{weighted}、\texttt{capacity}、\texttt{params}、\texttt{output\_format} 和 \texttt{constraints}。其核心约束如下：
+
+\begin{quote}
+\small
+\ttfamily
+Extract a graph reasoning task as strict JSON.\\
+Fields: task\_type, nodes, edges, directed, weighted, capacity, params, output\_format, constraints.\\
+Use edges as arrays [u, v] or [u, v, weight\_or\_capacity].\\
+Question: \{question\}
+\end{quote}
+
+\paragraph{PlanningAgent 模板摘要。}
+该模板用于生成算法级伪代码规划，要求模型描述图构建方式、算法选择、约束检查和输出格式，而不是直接生成 Python 程序。为支持规划引导检索，模板还要求输出检索术语、约束标签和期望 API 行为。其核心约束如下：
+
+\begin{quote}
+\small
+\ttfamily
+Produce structured algorithm-level pseudocode, not Python code.\\
+Explicitly include graph construction, algorithm choice, constraint checks, and output formatting.\\
+Do not copy concrete node names, edge lists, or weights into the plan.\\
+Refer to the runtime graph\_data.\\
+Return JSON with: pseudocode, constraints, algorithm\_hints, retrieval\_terms, constraint\_tags, expected\_api\_behavior.
+\end{quote}
+
+\paragraph{CodingAgent 模板摘要。}
+该模板用于基于任务、规划和检索知识生成可执行 Python 程序。模板强调程序必须从运行时变量 \texttt{graph\_data} 构建图结构，并依据检索知识选择合适的算法或 API。其核心约束如下：
+
+\begin{quote}
+\small
+\ttfamily
+Generate a complete Python program body.\\
+Runtime variable graph\_data already exists.\\
+Use standard library and NetworkX only.\\
+Build all nodes and edges from graph\_data.\\
+Do not hardcode node names, edge lists, or weights copied from the prompt or plan.\\
+Use retrieved knowledge only when it matches the graph type, constraints, API inputs, return values, and output format.\\
+If retrieved knowledge is incomplete, implement the missing logic with standard Python or NetworkX; do not invent unsupported APIs.\\
+The script must execute at top level and call print(...).\\
+Print only the final answer.
+\end{quote}
+
+\paragraph{RepairAgent 模板摘要。}
+该模板用于根据执行反馈和检索反馈修复当前程序。修复过程中需要保持 \texttt{graph\_data} 作为输入接口，并优先修正图构建错误、API 使用错误、约束遗漏和输出格式不匹配等问题。其核心约束如下：
+
+\begin{quote}
+\small
+\ttfamily
+Fix the code using execution feedback and retrieval feedback.\\
+Keep graph\_data as the input variable.\\
+If the error indicates API misuse, missing constraint handling, incorrect graph construction, or output mismatch, revise the code according to the plan, retrieved knowledge, and execution feedback.\\
+If retrieved knowledge is insufficient, use the repair-focused query result or implement the missing check directly.\\
+The fixed script must execute at top level and print only the answer.
+\end{quote}
+
+通过上述提示词与检索查询模板，PlanGraph 将自然语言图任务逐步转化为结构化任务、算法规划、外部知识调用和可执行程序，并在执行失败时通过反馈信息进行修复。该设计使各阶段的输入输出边界更加明确，也提高了图推理系统在不同任务类型和样本难度下的可追踪性。
