@@ -42,17 +42,17 @@
 \caption{主控调度器的核心状态转移}
 \label{tab:scheduler_states}
 \renewcommand{\arraystretch}{1.12}
-\begin{tabular}{m{1.7cm}m{2.5cm}m{2.8cm}m{3.6cm}}
+\begin{tabular}{m{1.7cm}m{2.4cm}m{2.6cm}m{4.2cm}}
 \toprule
-调度状态 & 主要输入 & 正常输出 & 失败后的转移策略 \\
+调度状态 & 主要输入 & 正常输出 & 失败触发与恢复动作 \\
 \midrule
-\texttt{PARSE} & 原始问题、图描述 & 任务表示 & 重新解析；失败退出 \\
-\texttt{PLAN} & 任务表示 & 规划、约束标签 & 重新规划；回到解析 \\
-\texttt{RETRIEVE} & 规划、任务标签 & 知识条目、质量评分 & 片段精炼；补充检索 \\
-\texttt{CODE} & 规划、检索知识 & 候选程序 & 局部修复；重生成 \\
-\texttt{VERIFY} & 候选程序、验证样例 & 验证结果、错误类型 & 修复；二次检索；重生成 \\
-\texttt{REPAIR} & 错误反馈、候选程序 & 修复程序 & 再次验证；预算耗尽后回退 \\
-\texttt{OUTPUT} & 通过验证的程序结果 & 最终答案 & 格式修复；失败退出 \\
+\texttt{PARSE} & 原始问题、图描述 & 任务表示 & 结构字段缺失时重新解析；失败退出 \\
+\texttt{PLAN} & 任务表示 & 规划、约束标签 & 规划为空或约束遗漏时重新规划；必要时回到解析 \\
+\texttt{RETRIEVE} & 规划、任务标签 & 知识条目、质量评分 & 检索质量低于阈值时片段精炼或补充检索 \\
+\texttt{CODE} & 规划、检索知识 & 候选程序 & 代码不可执行或接口不匹配时局部修复；必要时重生成 \\
+\texttt{VERIFY} & 候选程序、验证样例 & 验证结果、错误类型 & 执行异常或答案不一致时修复、二次检索或重生成 \\
+\texttt{REPAIR} & 错误反馈、候选程序 & 修复程序 & 修复后再次验证；预算耗尽后回退或失败退出 \\
+\texttt{OUTPUT} & 通过验证的程序结果 & 最终答案 & 输出格式不合规时格式修复；失败退出 \\
 \bottomrule
 \end{tabular}
 \end{table}
