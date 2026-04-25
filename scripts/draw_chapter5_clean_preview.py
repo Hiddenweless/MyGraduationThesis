@@ -132,9 +132,15 @@ def draw_category() -> None:
     """Draw task-category performance comparison."""
     cats = ["图结构分析", "最短路径", "匹配问题", "流优化", "哈密顿类"]
 
-    gpt = np.array([86.20, 75.50, 46.80, 68.20, 20.33])
-    sota = np.array([98.75, 97.10, 95.40, 97.53, 81.35])
-    plangraph = np.array([99.43, 99.12, 99.40, 96.82, 95.33])
+    # 任务归类口径：
+    # 图结构分析：GraphArena-CN/CC/GD, NLGraph-CONN/CYC, GraphWiz-CYC/CONN
+    # 最短路径：GraphArena-SD, NLGraph-SP, GraphWiz-SP
+    # 匹配问题：NLGraph-BM, GraphWiz-BIP/SM
+    # 流优化：NLGraph-MF, GraphWiz-MF
+    # 哈密顿类：GraphArena-TSP, NLGraph-HP, GraphWiz-HP
+    gpt = np.array([93.31, 83.67, 84.10, 68.20, 20.33])
+    sota = np.array([98.60, 98.80, 99.17, 94.40, 74.30])
+    plangraph = np.array([98.74, 99.50, 99.60, 96.32, 95.33])
 
     x = np.arange(len(cats))
     width = 0.24
@@ -195,11 +201,11 @@ def draw_category() -> None:
 
 def draw_difficulty_scale() -> None:
     """Draw complexity and graph-size stratified performance comparison."""
-    groups = ["非NP-hard", "NP-hard"]
+    groups = ["非NP完全", "NP完全"]
     base_np = np.array([99.20, 92.50])
     plan_np = np.array([99.60, 96.50])
 
-    scales = ["小规模", "中规模", "大规模"]
+    scales = ["简单样本", "中等样本", "困难样本"]
     base_scale = np.array([97.00, 95.20, 92.40])
     plan_scale = np.array([99.10, 98.00, 96.30])
 
