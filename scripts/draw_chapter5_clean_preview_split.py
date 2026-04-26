@@ -201,40 +201,43 @@ def draw_category() -> None:
 
 
 def draw_complexity_trend() -> None:
-    """Draw task-complexity stratified performance comparison."""
+    """Draw task-complexity stratified performance trend."""
     groups = ["非NP完全", "NP完全"]
     base_np = np.array([99.20, 92.50])
     plan_np = np.array([99.60, 96.50])
 
     x = np.arange(len(groups))
-    width = 0.30
 
-    fig, ax = plt.subplots(figsize=(6.0, 4.0))
+    fig, ax = plt.subplots(figsize=(5.6, 4.0))
     fig.patch.set_facecolor("white")
     polish_axes(ax, (88, 100.5))
 
-    bars_base = ax.bar(
-        x - width / 2,
+    ax.plot(
+        x,
         base_np,
-        width,
-        label="最优基线",
+        marker="o",
+        markersize=6.2,
+        linewidth=2.2,
         color=COLORS["orange"],
-        edgecolor="white",
-        linewidth=0.7,
+        label="最优基线",
+    )
+    ax.plot(
+        x,
+        plan_np,
+        marker="o",
+        markersize=6.2,
+        linewidth=2.2,
+        color=COLORS["blue"],
+        label="PlanGraph",
     )
 
-    bars_plan = ax.bar(
-        x + width / 2,
-        plan_np,
-        width,
-        label="PlanGraph",
-        color=COLORS["blue"],
-        edgecolor="white",
-        linewidth=0.7,
-    )
+    ax.fill_between(x, base_np, plan_np, color=COLORS["blue"], alpha=0.10)
 
     ax.set_xticks(x)
     ax.set_xticklabels(groups)
+
+    # 两个类别时适当留白，避免折线贴边。
+    ax.set_xlim(-0.25, len(groups) - 0.75)
 
     leg = ax.legend(
         ncol=2,
@@ -246,8 +249,44 @@ def draw_complexity_trend() -> None:
     for text in leg.get_texts():
         text.set_color(COLORS["ink"])
 
-    label_bars(ax, bars_base, dy=0.25, size=7.5)
-    label_bars(ax, bars_plan, dy=0.25, size=7.5)
+    # 手动放置数值标注，避免 99.2 和 99.6 与折线/点重叠。
+    ax.text(
+        x[0] - 0.04,
+        base_np[0] - 0.55,
+        f"{base_np[0]:.1f}",
+        ha="center",
+        va="top",
+        fontsize=7.5,
+        color=COLORS["ink"],
+    )
+    ax.text(
+        x[1],
+        base_np[1] + 0.25,
+        f"{base_np[1]:.1f}",
+        ha="center",
+        va="bottom",
+        fontsize=7.5,
+        color=COLORS["ink"],
+    )
+
+    ax.text(
+        x[0] + 0.06,
+        plan_np[0] + 0.30,
+        f"{plan_np[0]:.1f}",
+        ha="center",
+        va="bottom",
+        fontsize=7.5,
+        color=COLORS["ink"],
+    )
+    ax.text(
+        x[1],
+        plan_np[1] + 0.25,
+        f"{plan_np[1]:.1f}",
+        ha="center",
+        va="bottom",
+        fontsize=7.5,
+        color=COLORS["ink"],
+    )
 
     save_pdf(fig, "exp_complexity_trend_clean")
 
@@ -282,6 +321,7 @@ def draw_sample_difficulty_trend() -> None:
         color=COLORS["blue"],
         label="PlanGraph",
     )
+
     ax.fill_between(x, base_scale, plan_scale, color=COLORS["blue"], alpha=0.10)
 
     ax.set_xticks(x)
@@ -301,6 +341,7 @@ def draw_sample_difficulty_trend() -> None:
     label_points(ax, x, plan_scale, dy=0.25, size=7.5)
 
     save_pdf(fig, "exp_sample_difficulty_trend_clean")
+
 
 def draw_ablation() -> None:
     """Draw ablation comparison."""
