@@ -191,17 +191,24 @@ NetworkX 是 Python 生态中使用广泛的图计算库，支持丰富的图结
 
 \begin{table}[htbp]
 \centering
+\small
 \caption{相关图推理方法对比}
 \label{tab:related_compare}
 \renewcommand{\arraystretch}{1.15}
-\begin{tabularx}{\textwidth}{>{\raggedright\arraybackslash}p{2.5cm}>{\raggedright\arraybackslash}X>{\raggedright\arraybackslash}p{2.0cm}>{\raggedright\arraybackslash}p{2.0cm}>{\raggedright\arraybackslash}p{2.3cm}}
+\begin{tabularx}{\textwidth}{
+>{\raggedright\arraybackslash}p{2.4cm}
+>{\raggedright\arraybackslash}X
+>{\centering\arraybackslash}p{1.8cm}
+>{\centering\arraybackslash}p{1.8cm}
+>{\centering\arraybackslash}p{2.1cm}}
 \toprule
 方法类别 & 代表思路 & 外部知识 & 程序执行 & 验证闭环 \\
 \midrule
-直接提示推理 & CoT、ToT 等 & 无显式外部知识 & 不执行程序 & 无执行反馈 \\
-结构感知提示 & GraphGPT、GraphLLM & 依任务设置而定 & 不执行程序 & 无自动修复 \\
-程序生成方法 & PAL、GCoder & 样例或代码知识辅助 & 生成并执行程序 & 多为一次执行或弱反馈 \\
-多智能体方法 & GraphTeam 等 & 依角色调用工具或知识 & 按系统配置执行 & 具备协作检查但上游回退有限 \\
+直接提示推理 & 通用推理增强 & 否 & 否 & 否 \\
+结构感知提示 & 图结构提示或图任务对齐方法 & 可选 & 否 & 弱 \\
+程序生成方法 & 将图任务转化为代码求解 & 可选 & 是 & 弱 \\
+多智能体方法 & 多角色协作完成规划、生成与修复 & 可选 & 可选 & 部分具备 \\
+本文方法 & 规划引导检索、程序执行与反馈修复 & 是 & 是 & 强闭环 \\
 \bottomrule
 \end{tabularx}
 \end{table}
