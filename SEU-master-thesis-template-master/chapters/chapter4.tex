@@ -42,17 +42,21 @@
 \caption{主控调度器的核心状态转移}
 \label{tab:scheduler_states}
 \renewcommand{\arraystretch}{1.15}
-\begin{tabularx}{\textwidth}{>{\raggedright\arraybackslash}p{1.9cm}>{\raggedright\arraybackslash}p{2.5cm}>{\raggedright\arraybackslash}p{2.6cm}>{\raggedright\arraybackslash}X}
+\begin{tabularx}{\textwidth}{
+>{\centering\arraybackslash}p{1.8cm}
+>{\raggedright\arraybackslash}p{2.3cm}
+>{\raggedright\arraybackslash}p{2.3cm}
+>{\raggedright\arraybackslash}X}
 \toprule
-调度状态 & 主要输入 & 正常输出 & 失败触发与恢复动作 \\
+状态 & 主要输入 & 正常输出 & 失败处理 \\
 \midrule
-\texttt{PARSE} & 原始问题、图描述 & 任务表示 & 结构字段缺失时重新解析；失败退出 \\
-\texttt{PLAN} & 任务表示 & 规划、约束标签 & 规划为空或约束遗漏时重新规划；必要时回到解析 \\
-\texttt{RETRIEVE} & 规划、任务标签 & 知识条目、质量评分 & 检索质量低于阈值时片段精炼或补充检索 \\
-\texttt{CODE} & 规划、检索知识 & 候选程序 & 代码不可执行或接口不匹配时局部修复；必要时重生成 \\
-\texttt{VERIFY} & 候选程序、验证样例 & 验证结果、错误类型 & 执行异常或答案不一致时修复、二次检索或重生成 \\
-\texttt{REPAIR} & 错误反馈、候选程序 & 修复程序 & 修复后再次验证；预算耗尽后回退或失败退出 \\
-\texttt{OUTPUT} & 通过验证的程序结果 & 最终答案 & 输出格式不合规时格式修复；失败退出 \\
+\texttt{PARSE} & 原始问题、图描述 & 任务表示 & 字段缺失时重新解析；失败退出 \\
+\texttt{PLAN} & 任务表示 & 规划、约束标签 & 规划为空或约束遗漏时重新规划 \\
+\texttt{RETRIEVE} & 规划、任务标签 & 知识条目、质量评分 & 质量低于阈值时精炼或补充检索 \\
+\texttt{CODE} & 规划、检索知识 & 候选程序 & 代码不可执行或接口错误时局部修复 \\
+\texttt{VERIFY} & 候选程序、验证样例 & 验证结果、错误类型 & 执行异常或答案错误时触发修复 \\
+\texttt{REPAIR} & 错误反馈、候选程序 & 修复程序 & 修复后再次验证；预算耗尽则回退 \\
+\texttt{OUTPUT} & 验证通过结果 & 最终答案 & 格式异常时修复；失败退出 \\
 \bottomrule
 \end{tabularx}
 \end{table}
@@ -68,20 +72,25 @@
 \small
 \caption{共享黑板中的核心事件类型}
 \label{tab:blackboard_events}
-\begin{tabular}{m{2.5cm}m{2.2cm}m{3.0cm}m{3.2cm}}
+\renewcommand{\arraystretch}{1.15}
+\begin{tabularx}{\textwidth}{
+>{\raggedright\arraybackslash}p{2.3cm}
+>{\raggedright\arraybackslash}p{2.0cm}
+>{\raggedright\arraybackslash}p{2.8cm}
+>{\raggedright\arraybackslash}X}
 \toprule
-消息类型 & 触发时机 & 核心字段 & 主要用途 \\
+事件类型 & 触发时机 & 核心字段 & 用途 \\
 \midrule
-阶段启动事件 & 阶段开始 & 阶段名 & 记录调度轨迹并触发日志写入 \\
+阶段启动事件 & 阶段开始 & 阶段名 & 记录调度轨迹并写入日志 \\
 任务解析完成 & 解析完成 & 任务类型 & 为规划和检索提供任务语义 \\
 规划结果就绪 & 规划完成 & 工件编号、版本号 & 触发检索与编码阶段 \\
-检索结果就绪 & 检索完成 & 检索原因、候选条数 & 向编码或修复提供知识依据 \\
-候选代码就绪 & 代码生成完成 & 工件编号、版本号 & 触发受控执行与验证 \\
+检索结果就绪 & 检索完成 & 检索原因、候选条数 & 为编码或修复提供知识依据 \\
+候选代码就绪 & 代码生成完成 & 工件编号、版本号 & 触发执行与验证 \\
 代码失败事件 & 验证失败 & 错误码、恢复动作 & 指导调度器选择恢复路径 \\
 局部修复完成 & 修复完成 & 修复轮数 & 触发再次验证 \\
-结果输出完成 & 结果生成完成 & 成功标志 & 结束样例求解并写入最终日志 \\
+结果输出完成 & 结果生成完成 & 成功标志 & 结束求解并写入最终日志 \\
 \bottomrule
-\end{tabular}
+\end{tabularx}
 \end{table}
 
 需要强调的是，黑板事件不是额外的形式化包装，而是系统稳定运行的必要条件。若缺少事件记录，调度器只能根据当前上下文判断下一步动作，容易在多轮修复后丢失失败来源；而通过事件链，系统可以明确知道当前候选程序来自哪一次规划、依赖哪一次检索、失败于哪一次验证。这种可追踪性不仅有助于调试系统，也为第五章中关于首次通过率、修复收敛率和失败类型的分析提供了数据基础。
@@ -110,20 +119,23 @@
 \small
 \caption{中间工件的核心字段}
 \label{tab:artifact_fields}
-\begin{tabular}{m{2.8cm}m{7.5cm}}
+\renewcommand{\arraystretch}{1.15}
+\begin{tabularx}{\textwidth}{
+>{\raggedright\arraybackslash}p{3.0cm}
+>{\raggedright\arraybackslash}X}
 \toprule
 字段 & 含义 \\
 \midrule
-\texttt{id} & 工件唯一标识，例如 \texttt{plan:1:ad03bd12} \\
+\texttt{id} & 工件唯一标识，如 \texttt{plan:1:ad03bd12} \\
 \texttt{kind} & 工件类别，如 \texttt{task\_spec}、\texttt{plan}、\texttt{retrieval} \\
-\texttt{version} & 同类工件的版本号，用于标识迭代过程 \\
-\texttt{source\_module} & 生成该工件的模块，例如问题解析模块或规划模块 \\
-\texttt{timestamp} & 工件写入时间，用于记录阶段顺序与复现实验 \\
-\texttt{parent\_version} & 上游依赖版本，用于恢复依赖链和定位失败来源 \\
-\texttt{payload} & 工件主体内容，如结构化任务、规划伪代码或验证结果 \\
-\texttt{summary} & 对长代码、长列表和复杂对象的压缩摘要 \\
+\texttt{version} & 同类工件版本号，用于记录迭代过程 \\
+\texttt{source\_module} & 生成该工件的模块名称 \\
+\texttt{timestamp} & 工件写入时间，用于记录阶段顺序 \\
+\texttt{parent\_version} & 上游依赖版本，用于追踪依赖链 \\
+\texttt{payload} & 工件主体内容，如任务表示、规划或验证结果 \\
+\texttt{summary} & 对长代码、长列表或复杂对象的摘要 \\
 \bottomrule
-\end{tabular}
+\end{tabularx}
 \end{table}
 
 工件链的价值可以通过旅行商问题样例加以说明。对于一个要求从固定起点出发、访问全部节点并返回起点的带权无向图任务，问题解析阶段生成的 \texttt{task\_spec} 会记录图类型、边权信息、起点约束、回路约束和输出形式；规划阶段生成的 \texttt{plan} 会记录构建带权图—固定起点—枚举候选回路—计算总代价—选择最优闭环的求解意图；检索阶段生成的 \texttt{retrieval:1} 保存与旅行商问题、哈密顿回路和路径代价计算相关的知识条目；编码阶段生成的 \texttt{candidate\_code:1} 则依赖 \texttt{plan:1} 和 \texttt{retrieval:1}。如果验证阶段发现候选程序没有正确处理回到起点的约束，系统不会覆盖原有工件，而是生成 \texttt{verification:1} 和后续的 \texttt{repair:1}。这样，失败原因、修复动作和新程序版本之间形成明确依赖关系。
@@ -177,18 +189,22 @@
 \small
 \caption{主要错误类型与恢复路径}
 \label{tab:error_recovery}
-\begin{tabular}{m{3.0cm}m{3.0cm}m{4.9cm}}
+\renewcommand{\arraystretch}{1.15}
+\begin{tabularx}{\textwidth}{
+>{\raggedright\arraybackslash}p{3.0cm}
+>{\raggedright\arraybackslash}X
+>{\raggedright\arraybackslash}X}
 \toprule
 错误类型 & 典型含义 & 恢复路径 \\
 \midrule
-语法或导入错误 & 程序本身不可执行 & 保持当前规划与检索结果，直接进行局部修复 \\
-空输出或约束违反 & 程序可运行但结果不满足任务要求 & 局部修复后再次验证 \\
-图构建或 API 使用错误 & 图字段组织方式或函数选择存在偏差 & 二次检索后进入局部修复，再次验证 \\
-答案错误 & 程序可执行但答案与判定器不一致 & 结合失败反馈补充检索，必要时重生成 \\
-超时错误 & 程序超时或搜索开销失控 & 受控终止当前执行，放弃该候选并触发重生成 \\
-上游阶段失败与未知异常 & 规划、检索阶段失稳，或预算耗尽 & 有界回退；超过预算后输出结构化失败 \\
+语法或导入错误 & 程序不可执行 & 保持规划与检索结果，直接局部修复 \\
+空输出或约束违反 & 程序可运行，但结果不满足任务要求 & 局部修复后再次验证 \\
+图构建或 API 使用错误 & 图字段组织或函数选择存在偏差 & 结合失败反馈二次检索，再修复 \\
+答案错误 & 程序可执行，但答案与判定器不一致 & 补充检索；必要时重生成程序 \\
+超时错误 & 搜索开销过大或程序超时 & 终止当前执行，触发重生成 \\
+上游失败或未知异常 & 规划、检索失稳，或预算耗尽 & 有界回退；超预算后输出结构化失败 \\
 \bottomrule
-\end{tabular}
+\end{tabularx}
 \end{table}
 
 异常恢复机制的关键在于有界。如果系统在同一错误上无限修复，虽然表面上体现了反馈能力，实际却会造成运行成本失控和错误方向强化。为避免这种情况，PlanGraph 为规划尝试次数、检索尝试次数、局部修复轮数和重生成轮数分别设置上限。设第 $s$ 个阶段的最大尝试次数为 $B_s$，当前尝试次数为 $b_s$，则调度器只在

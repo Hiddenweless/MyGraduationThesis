@@ -181,15 +181,29 @@ s(P,T,k_i)=\lambda_1 s_{\mathrm{sem}}(P,k_i)+\lambda_2 s_{\mathrm{tag}}(T,k_i)+\
 \small
 \caption{检索质量评估下的分级纠偏策略}
 \label{tab:retrieval_correction}
-\begin{tabular}{m{2.2cm}m{3.3cm}m{4.2cm}m{3.2cm}}
+\renewcommand{\arraystretch}{1.15}
+\begin{tabularx}{\textwidth}{
+>{\centering\arraybackslash}p{2.0cm}
+>{\raggedright\arraybackslash}p{3.1cm}
+>{\raggedright\arraybackslash}X
+>{\raggedright\arraybackslash}X}
 \toprule
-质量状态 & 判定依据 & 触发动作 & 主要作用 \\
+质量状态 & 判定依据 & 纠偏动作 & 作用 \\
 \midrule
-高置信度 & $\mathrm{RQ}(K|P,T)\ge \tau_h$ & 直接进入编码，仅保留高分条目 & 减少额外调用，保持编码上下文紧凑 \\
-中置信度 & $\tau_l \le \mathrm{RQ}(K|P,T)<\tau_h$ & 片段级精炼，按规划步骤重组知识片段 & 降低冗余上下文，强化步骤与知识的一致性 \\
-低置信度 & $\mathrm{RQ}(K|P,T)<\tau_l$ & 根据缺失步骤和约束标签重写查询，执行补充检索 & 避免在低质量知识上盲目编码，减少后续修复成本 \\
+高置信度 &
+$\mathrm{RQ}(K|P,T)\ge \tau_h$ &
+保留高分条目，进入编码 &
+减少额外调用，保持上下文简洁 \\
+中置信度 &
+$\tau_l \le \mathrm{RQ}(K|P,T)<\tau_h$ &
+按规划步骤精炼和重组片段 &
+降低冗余，增强知识与步骤一致性 \\
+低置信度 &
+$\mathrm{RQ}(K|P,T)<\tau_l$ &
+重写查询并补充检索 &
+避免低质知识进入编码，降低修复成本 \\
 \bottomrule
-\end{tabular}
+\end{tabularx}
 \end{table}
 
 通过重排序、质量评估与纠偏筛选，编码智能体接收到的知识集合更紧凑，也更贴近规划意图。该过程并不是为了召回尽可能多的知识，而是为了减少与当前求解无关甚至相互冲突的上下文。对于大语言模型生成代码而言，过多不相关知识可能反而造成上下文噪声，导致 API 混用或算法选择摇摆。因此，知识筛选不只是检索阶段的附加步骤，而是连接规划约束、知识利用和后续编码效率的重要中间机制。
