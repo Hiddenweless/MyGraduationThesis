@@ -43,19 +43,19 @@
 \label{tab:scheduler_states}
 \renewcommand{\arraystretch}{1.15}
 \begin{tabularx}{\textwidth}{
->{\centering\arraybackslash}p{1.8cm}
->{\raggedright\arraybackslash}p{2.3cm}
->{\raggedright\arraybackslash}p{2.3cm}
+>{\raggedright\arraybackslash}p{1.7cm}
+>{\raggedright\arraybackslash}p{3.2cm}
+>{\raggedright\arraybackslash}p{3.2cm}
 >{\raggedright\arraybackslash}X}
 \toprule
 状态 & 主要输入 & 正常输出 & 失败处理 \\
 \midrule
-\texttt{PARSE} & 原始问题、图描述 & 任务表示 & 字段缺失时重新解析；失败退出 \\
-\texttt{PLAN} & 任务表示 & 规划、约束标签 & 规划为空或约束遗漏时重新规划 \\
-\texttt{RETRIEVE} & 规划、任务标签 & 知识条目、质量评分 & 质量低于阈值时精炼或补充检索 \\
-\texttt{CODE} & 规划、检索知识 & 候选程序 & 代码不可执行或接口错误时局部修复 \\
-\texttt{VERIFY} & 候选程序、验证样例 & 验证结果、错误类型 & 执行异常或答案错误时触发修复 \\
-\texttt{REPAIR} & 错误反馈、候选程序 & 修复程序 & 修复后再次验证；预算耗尽则回退 \\
+\texttt{PARSE} & 原始问题、图描述 & 任务表示 & 字段缺失时重解析；失败退出 \\
+\texttt{PLAN} & 任务表示 & 规划、约束标签 & 规划为空或约束遗漏时重规划 \\
+\texttt{RETRIEVE} & 规划、任务标签 & 知识条目、质量评分 & 质量低于阈值时精炼或补检 \\
+\texttt{CODE} & 规划、检索知识 & 候选程序 & 代码不可执行或接口错误时修复 \\
+\texttt{VERIFY} & 候选程序、验证样例 & 验证结果、错误类型 & 执行异常或错误修复 \\
+\texttt{REPAIR} & 错误反馈、候选程序 & 修复程序 & 修复后再验证；超限则回退 \\
 \texttt{OUTPUT} & 验证通过结果 & 最终答案 & 格式异常时修复；失败退出 \\
 \bottomrule
 \end{tabularx}
@@ -74,9 +74,9 @@
 \label{tab:blackboard_events}
 \renewcommand{\arraystretch}{1.15}
 \begin{tabularx}{\textwidth}{
->{\raggedright\arraybackslash}p{2.3cm}
->{\raggedright\arraybackslash}p{2.0cm}
 >{\raggedright\arraybackslash}p{2.8cm}
+>{\raggedright\arraybackslash}p{2.4cm}
+>{\raggedright\arraybackslash}p{3.5cm}
 >{\raggedright\arraybackslash}X}
 \toprule
 事件类型 & 触发时机 & 核心字段 & 用途 \\
@@ -120,8 +120,8 @@
 \caption{中间工件的核心字段}
 \label{tab:artifact_fields}
 \renewcommand{\arraystretch}{1.15}
-\begin{tabularx}{\textwidth}{
->{\raggedright\arraybackslash}p{3.0cm}
+\begin{tabularx}{0.78\textwidth}{
+>{\raggedright\arraybackslash}p{2.8cm}
 >{\raggedright\arraybackslash}X}
 \toprule
 字段 & 含义 \\
@@ -191,7 +191,7 @@
 \label{tab:error_recovery}
 \renewcommand{\arraystretch}{1.15}
 \begin{tabularx}{\textwidth}{
->{\raggedright\arraybackslash}p{3.0cm}
+>{\raggedright\arraybackslash}p{3.4cm}
 >{\raggedright\arraybackslash}X
 >{\raggedright\arraybackslash}X}
 \toprule
@@ -202,7 +202,7 @@
 图构建或 API 使用错误 & 图字段组织或函数选择存在偏差 & 结合失败反馈二次检索，再修复 \\
 答案错误 & 程序可执行，但答案与判定器不一致 & 补充检索；必要时重生成程序 \\
 超时错误 & 搜索开销过大或程序超时 & 终止当前执行，触发重生成 \\
-上游失败或未知异常 & 规划、检索失稳，或预算耗尽 & 有界回退；超预算后输出结构化失败 \\
+上游失败或未知异常 & 规划、检索失稳或预算耗尽 & 有界回退；超预算后输出结构化失败 \\
 \bottomrule
 \end{tabularx}
 \end{table}

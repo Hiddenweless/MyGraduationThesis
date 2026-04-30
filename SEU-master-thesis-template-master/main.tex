@@ -69,6 +69,8 @@
 % \usepackage{fontspec} % 加载 fontspec 宏包
 % \usepackage{xeCJK}    % 加载 xeCJK 宏包以支持中文
 \renewcommand{\thefootnote}{\ding{\numexpr171+\value{footnote}}}
+\newif\ifblindreview
+\blindreviewtrue  % 盲审版设为 true；正式版改为 false
 \begin{document}
 
 %% ----------------------------------------------------------------------------
@@ -77,7 +79,11 @@
 \categorynumber{TN92} %《中国图书资料分类法》分类法
 \UDC{004.8}              %《国际十进分类法UDC》的类号
 \secretlevel{公开}        % 学位论文密级分为"公开"、"内部"、"秘密"和"机密"四种
-\studentid{请填写学号}      % 学号要完整，前面的零不能省略
+\ifblindreview
+    \studentid{****}
+\else
+    \studentid{请填写学号}      % 学号要完整，前面的零不能省略
+\fi
 
 %% ----------------------------------------------------------------------------
 %%                           Thesis Title and Spine
@@ -97,12 +103,12 @@
 %%                             Author and Advidor
 %% ----------------------------------------------------------------------------
 \author
-    {王腾龙}                        % 作者中文姓名
-    {WANG Teng-long}                  % 作者英文姓名，首字母大写，姓名分开，双字用「-」连接
+    {\ifblindreview ****\else 王腾龙\fi}                        % 作者中文姓名
+    {\ifblindreview ****\else WANG Teng-long\fi}                  % 作者英文姓名，首字母大写，姓名分开，双字用「-」连接
 
 \advisor
-    {林丽}                % 导师中文姓名
-    {LIN Li}        % 导师英文姓名
+    {\ifblindreview ****\else 林丽\fi}                % 导师中文姓名
+    {\ifblindreview ****\else LIN Li\fi}        % 导师英文姓名
     {}                     % 导师职称
 %% ----------------------------------------------------------------------------
 %%                              Thesis Defence
@@ -115,8 +121,13 @@
 \submajor{图推理与智能计算}             % 二级学科名
 \defenddate{2026年5月}          % 答辩日期 \today
 \authorizedate{}                  % 授予学位日期，这个档案袋不需要填
-\committeechair{}               % 答辩委员会主席姓名
-\reviewer{}{}                % 两位论文评阅人姓名
+\ifblindreview
+    \committeechair{****}
+    \reviewer{盲审}{盲审}
+\else
+    \committeechair{}               % 答辩委员会主席姓名
+    \reviewer{}{}                % 两位论文评阅人姓名
+\fi
 \department                        % 学院名称
     {苏州联合研究生院}
     {Suzhou Joint Graduate School}
@@ -156,7 +167,10 @@
 %% ----------------------------------------------------------------------------
 %%            Acknowledgement, Appendix, Bibliography and Resume
 %% ----------------------------------------------------------------------------
-\input{chapters/acknowledgement}    % 致谢
+\ifblindreview
+\else
+    \input{chapters/acknowledgement}    % 致谢
+\fi
 \cleardoublepage
 \phantomsection
 \addcontentsline{toc}{chapter}{\bibname}
@@ -167,6 +181,9 @@
 % \bibliography{reference.bib} % 告诉编译器参考文献所在文件
 
 \input{chapters/appendix}           % 附录
-\input{chapters/resume}             % 作者简介
-\input{chapters/Committees_list}    % 毕业/学位论文答辩委员会名单
+\ifblindreview
+\else
+    \input{chapters/resume}             % 作者简介
+    \input{chapters/Committees_list}    % 毕业/学位论文答辩委员会名单
+\fi
 \end{document}
