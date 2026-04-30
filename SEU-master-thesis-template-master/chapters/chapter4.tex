@@ -44,8 +44,8 @@
 \renewcommand{\arraystretch}{1.15}
 \begin{tabularx}{\textwidth}{
 >{\raggedright\arraybackslash}p{1.7cm}
->{\raggedright\arraybackslash}p{3.2cm}
->{\raggedright\arraybackslash}p{3.2cm}
+>{\raggedright\arraybackslash}p{3.45cm}
+>{\raggedright\arraybackslash}p{3.45cm}
 >{\raggedright\arraybackslash}X}
 \toprule
 状态 & 主要输入 & 正常输出 & 失败处理 \\
@@ -54,7 +54,7 @@
 \texttt{PLAN} & 任务表示 & 规划、约束标签 & 规划为空或约束遗漏时重规划 \\
 \texttt{RETRIEVE} & 规划、任务标签 & 知识条目、质量评分 & 质量低于阈值时精炼或补检 \\
 \texttt{CODE} & 规划、检索知识 & 候选程序 & 代码不可执行或接口错误时修复 \\
-\texttt{VERIFY} & 候选程序、验证样例 & 验证结果、错误类型 & 执行异常或错误修复 \\
+\texttt{VERIFY} & 候选程序、验证样例 & 验证结果、错误类型 & 执行异常或错误时修复 \\
 \texttt{REPAIR} & 错误反馈、候选程序 & 修复程序 & 修复后再验证；超限则回退 \\
 \texttt{OUTPUT} & 验证通过结果 & 最终答案 & 格式异常时修复；失败退出 \\
 \bottomrule
