@@ -7,9 +7,9 @@
 
 \subsection{图与图算法}
 
-设图记为 $G=(V,E)$，其中 $V$ 表示节点集合，$E$ 表示边集合。根据边是否具有方向和权重，可进一步区分为有向图、无向图、带权图、多重图以及动态图等形式\cite{diestel2017graph}。在众多图计算任务中，最短路径、连通分量、拓扑排序、最大流、匹配以及团搜索等问题具有较高代表性。
+设图记为 $G=(V,E)$，其中 $V$ 表示节点集合，$E$ 表示边集合。根据边是否具有方向和权重，还可区分为有向图、无向图、带权图、多重图以及动态图等形式\cite{diestel2017graph}。在众多图计算任务中，最短路径、连通分量、拓扑排序、最大流、匹配以及团搜索等问题具有较高代表性。
 
-传统图算法在上述任务上已经形成了较为成熟的理论体系。例如，Dijkstra 和 Bellman-Ford 可用于最短路径计算，DFS 与 BFS 可用于遍历和连通性判断，Ford-Fulkerson 与 Edmonds-Karp 可用于流优化，回溯搜索与动态规划常用于处理旅行商等组合优化问题\cite{cormen2009clrs,korte2018combinatorial}。从更广义的图学习视角看，DeepWalk、node2vec、GCN、GraphSAGE、GAT、GIN 和 GraphGPS 等模型推动了图表示学习从随机游走表征、消息传递网络逐步发展到图 Transformer 架构\cite{perozzi2014deepwalk,grover2016node2vec,kipf2017gcn,hamilton2017graphsage,velickovic2018gat,xu2019gin,rampasek2022graphgps}。与此同时，SNAP、OGB、Benchmarking Graph Neural Networks 和 GraphGym 等工作则为图数据组织、模型设计空间和评测流程提供了系统基础\cite{leskovec2016snap,hu2020ogb,dwivedi2023benchmarking,you2020graphgym}。这些算法与基准共同说明，图任务具有清晰的结构对象、成熟的计算过程和稳定的评测方式，因此非常适合作为大语言模型外部求解的可靠支撑。
+传统图算法在上述任务上已经形成了较为成熟的理论体系。例如，Dijkstra 和 Bellman-Ford 可用于最短路径计算，DFS 与 BFS 可用于遍历和连通性判断，Ford-Fulkerson 与 Edmonds-Karp 可用于流优化，回溯搜索与动态规划常用于处理旅行商等组合优化问题\cite{cormen2009clrs,korte2018combinatorial}。从更广义的图学习视角看，DeepWalk、node2vec、GCN、GraphSAGE、GAT、GIN 和 GraphGPS 等模型推动了图表示学习从随机游走表征、消息传递网络逐步发展到图 Transformer 架构\cite{perozzi2014deepwalk,grover2016node2vec,kipf2017gcn,hamilton2017graphsage,velickovic2018gat,xu2019gin,rampasek2022graphgps}。SNAP、OGB、Benchmarking Graph Neural Networks 和 GraphGym 等工作则为图数据组织、模型设计空间和评测流程提供了系统基础\cite{leskovec2016snap,hu2020ogb,dwivedi2023benchmarking,you2020graphgym}。这些算法与基准共同说明，图任务具有清晰的结构对象、成熟的计算过程和稳定的评测方式，因此非常适合作为大语言模型外部求解的可靠支撑。
 
 \subsection{图推理任务的特点}
 
@@ -63,19 +63,19 @@
 
 \subsection{链式与分解式推理}
 
-Chain-of-Thought 提示通过要求模型先生成中间推理步骤，再给出最终答案，从而提升复杂问题求解能力\cite{wei2022chain}。Self-Consistency 在此基础上采样多条思维链并进行投票，降低单次生成的偶然误差\cite{wang2023selfconsistency}。Least-to-Most Prompting 则强调先求解简单子问题，再逐步组合为完整解答\cite{zhou2023least}。进一步地，Zero-Shot CoT 与 Selection-Inference 说明，即便在缺少显式示例或需要保持中间步骤可解释的情况下，合理的推理分解也能改善模型表现\cite{kojima2022zeroshot,creswell2023selection}。这些方法共同说明，对于复杂任务而言，分步思考是提升模型稳定性的有效手段。
+Chain-of-Thought 提示通过要求模型先生成中间推理步骤，再给出最终答案，以提升复杂问题求解能力\cite{wei2022chain}。Self-Consistency 在此基础上采样多条思维链并进行投票，降低单次生成的偶然误差\cite{wang2023selfconsistency}。Least-to-Most Prompting 则强调先求解简单子问题，再逐步组合为完整解答\cite{zhou2023least}。Zero-Shot CoT 与 Selection-Inference 的结果表明，即便在缺少显式示例或需要保持中间步骤可解释的情况下，合理的推理分解也能改善模型表现\cite{kojima2022zeroshot,creswell2023selection}。这些方法共同说明，对于复杂任务而言，分步思考是提升模型稳定性的有效手段。
 
 然而，上述方法更多是针对自然语言或数值推理场景设计。在图推理中，模型不仅要生成中间思路，还需要将这些思路映射为图结构上的算法操作。如果缺乏明确的算法级规划表示，中间推理仍可能停留在模糊的自然语言层面，难以直接指导程序实现。
 
 \subsection{搜索式与结构化推理}
 
-Tree-of-Thoughts 将问题求解建模为搜索过程，通过对多条候选思路进行扩展、评估和回溯，提高复杂任务中的探索能力\cite{yao2023tree}。Graph-of-Thoughts 进一步将思路组织为图结构，以支持更灵活的状态复用和关系建模\cite{besta2024graph}。ReAct 则把推理过程与外部行动交织到同一循环中，而 Self-Refine、CRITIC 和过程验证工作进一步强调中间步骤在生成后仍可被检查、纠偏和修复\cite{yao2023react,madaan2023selfrefine,critic2024,lightman2023processreward}。这些方法揭示了一个重要方向，即大语言模型的推理过程可以显式结构化，而不仅仅是生成线性文本序列。
+Tree-of-Thoughts 将问题求解建模为搜索过程，通过对多条候选思路进行扩展、评估和回溯，提高复杂任务中的探索能力\cite{yao2023tree}。Graph-of-Thoughts 则将思路组织为图结构，以支持更灵活的状态复用和关系建模\cite{besta2024graph}。ReAct 把推理过程与外部行动交织到同一循环中，而 Self-Refine、CRITIC 和过程验证工作强调中间步骤在生成后仍可被检查、纠偏和修复\cite{yao2023react,madaan2023selfrefine,critic2024,lightman2023processreward}。这些方法揭示了一个重要方向，即大语言模型的推理过程可以显式结构化，而不仅仅是生成线性文本序列。
 
 对图推理任务而言，这一启示尤为重要。因为图任务本身就具有天然的结构性，如果中间规划同样以结构化方式表达，则更容易与后续图算法选择、知识检索和代码实现过程耦合。
 
 \subsection{推理增强方法的阶段性演进}
 
-若从技术路线演进角度观察，大语言模型推理增强方法大致经历了三个阶段。第一阶段主要依赖提示工程，通过示例、角色设定和思维链等方式引导模型输出更合理的中间步骤。第二阶段开始强调将复杂计算委托给外部程序或 API，从而缓解语言模型在精确计算上的局限\cite{schick2023toolformer,qin2023toolllm,gorilla2024}。第三阶段则进一步引入多智能体和过程控制思想，希望在生成前后增加规划、检索、审阅、验证与修复等环节，构建更加稳定的系统化求解流程；CAMEL、MetaGPT、AgentVerse、AutoGen、Language Agents as Optimizable Graphs、Generative Agents 与 Voyager 等工作都体现了这种从单模型生成走向系统协作与持续执行的趋势\cite{camel2023,metagpt2023,agentverse2023,wu2023autogen,zhuge2024languageagents,park2023generativeagents,wang2023voyager,zhou2023promptbreeder}。
+若从技术路线演进角度观察，大语言模型推理增强方法大致经历了三个阶段。第一阶段主要依赖提示工程，通过示例、角色设定和思维链等方式引导模型输出更合理的中间步骤。第二阶段开始强调将复杂计算委托给外部程序或 API，以缓解语言模型在精确计算上的局限\cite{schick2023toolformer,qin2023toolllm,gorilla2024}。第三阶段则引入多智能体和过程控制思想，希望在生成前后增加规划、检索、审阅、验证与修复等环节，构建更加稳定的系统化求解流程；CAMEL、MetaGPT、AgentVerse、AutoGen、Language Agents as Optimizable Graphs、Generative Agents 与 Voyager 等工作都体现了这种从单模型生成走向系统协作与持续执行的趋势\cite{camel2023,metagpt2023,agentverse2023,wu2023autogen,zhuge2024languageagents,park2023generativeagents,wang2023voyager,zhou2023promptbreeder}。
 
 图推理任务非常适合成为这一演进路线的应用场景，因为它天然具有结构化输入、明确算法和可执行求解过程。与其要求单个模型在一次生成中同时完成问题理解、算法选择和程序实现，不如将这些功能拆分到多个阶段，利用中间结构和外部工具提升整体稳定性。对本文所关注的问题而言，这一路径也为后续方法设计提供了直接启发。
 
@@ -94,13 +94,13 @@ Tree-of-Thoughts 将问题求解建模为搜索过程，通过对多条候选思
 
 \subsection{程序辅助求解}
 
-PAL 证明了在许多数学和符号推理任务上，让模型生成程序并交给解释器执行，往往比直接生成答案更可靠\cite{gao2023pal}。在更广的程序生成研究中，AlphaCode 展示了大模型在复杂编程任务上的潜力\cite{liang2022alphacode}。类似地，GraphCoder 等工作也尝试将图问题转化为调用 NetworkX 的程序，从而借助成熟图算法库完成求解\cite{zhang2025gcoder,hagberg2008networkx}。
+PAL 证明了在许多数学和符号推理任务上，让模型生成程序并交给解释器执行，往往比直接生成答案更可靠\cite{gao2023pal}。在更广的程序生成研究中，AlphaCode 展示了大模型在复杂编程任务上的潜力\cite{liang2022alphacode}。类似地，GraphCoder 等工作也尝试将图问题转化为调用 NetworkX 的程序，以借助成熟图算法库完成求解\cite{zhang2025gcoder,hagberg2008networkx}。
 
 程序辅助求解的核心优势在于将高精度计算从语言模型中剥离出来。模型只需负责理解问题与组织算法，而具体求值过程可以由外部程序完成。对于图推理这类结构约束强、精确计算要求高的任务，这一思路具有明显优势。
 
 \subsection{工具调用与外部知识使用}
 
-Toolformer、ToolLLM 等工作强调模型可以学习何时调用外部工具、使用什么接口以及如何整合工具返回结果\cite{schick2023toolformer,qin2023toolllm}。Gorilla 与 CRITIC 则进一步表明，模型不仅需要掌握调用能力，还需要在工具交互过程中完成 API 对齐、结果校验和错误纠正\cite{gorilla2024,critic2024}。在图推理场景下，外部工具不仅包括图计算函数，还包括图算法文档、函数说明和示例代码等知识源。
+Toolformer、ToolLLM 等工作强调模型可以学习何时调用外部工具、使用什么接口以及如何整合工具返回结果\cite{schick2023toolformer,qin2023toolllm}。Gorilla 与 CRITIC 的结果表明，模型不仅需要掌握调用能力，还需要在工具交互过程中完成 API 对齐、结果校验和错误纠正\cite{gorilla2024,critic2024}。在图推理场景下，外部工具不仅包括图计算函数，还包括图算法文档、函数说明和示例代码等知识源。
 
 NetworkX 是 Python 生态中使用广泛的图计算库，支持丰富的图结构表示与算法接口，包括路径搜索、中心性分析、匹配、生成树、团搜索和流计算等\cite{hagberg2008networkx}。对于语言模型生成程序而言，NetworkX 的 API 语义相对清晰，文档覆盖较完整，适合作为外部知识库的重要来源；同时，它覆盖大量经典图算法，便于将不同基准测试集上的求解过程统一到同一工具生态内。本文将文档知识组织为外部知识库，每条知识包含函数名、适用任务、输入参数、返回形式及示例说明。与一般 RAG 系统类似，知识库的作用不是直接替代模型推理，而是在模型形成规划后，为代码生成提供可靠的实现参照\cite{karpukhin2020dpr,lewis2020rag,borgeaud2022retro,izacard2023atlas,johnson2019faiss,asai2024selfrag,gao2024ragsurvey}。
 
@@ -116,15 +116,15 @@ NetworkX 是 Python 生态中使用广泛的图计算库，支持丰富的图结
 
 多智能体系统通常将复杂任务拆分给多个功能角色，例如规划者、执行者、检索者、审阅者和修复者等。不同角色在提示词、上下文和目标函数上各有侧重，可以缓解单一智能体既要理解问题、又要生成程序、还要验证结果的压力。除 GraphTeam 外，CAMEL、MetaGPT、AgentVerse、Generative Agents 与 Voyager 等工作也从角色扮演协作、软件式协同框架、群体模拟和持续探索等角度展示了多智能体系统的潜力\cite{li2024graphteam,camel2023,metagpt2023,agentverse2023,park2023generativeagents,wang2023voyager}。
 
-不过，现有多智能体方法中仍存在两个值得改进的问题。其一，角色拆分往往停留在讨论式协作层面，缺乏统一的中间规划表示；其二，知识检索与执行验证往往只是附属模块，没有真正围绕结构化求解过程展开。对于本文所研究的图推理场景而言，这说明仅有角色划分仍然不够，还需要进一步引入规划先行和验证闭环的一体化组织方式。
+不过，现有多智能体方法中仍存在两个值得改进的问题。其一，角色拆分往往停留在讨论式协作层面，缺乏统一的中间规划表示；其二，知识检索与执行验证往往只是附属模块，没有真正围绕结构化求解过程展开。对于本文所研究的图推理场景，仅有角色划分仍然不够，还需要引入规划先行和验证闭环的一体化组织方式。
 
-结合现有研究可以看出，面向图推理的多智能体系统至少需要满足四类设计要求。首先，角色边界要足够清晰，否则问题解析、规划、编码和验证之间容易互相覆盖，系统看似分工，实际却难以定位错误来源。其次，中间表示应尽可能稳定，也就是让智能体通过结构化工件协作，而不是完全依赖自由文本讨论。再次，系统必须为外部知识和外部工具预留标准化接入口，这样才能在不推翻整体架构的前提下替换知识库、执行环境和图算法库。最后，闭环验证是不可缺少的环节，多智能体系统不应只追求生成更多答案，而应追求更快发现错误并修正错误。
+结合现有研究，面向图推理的多智能体系统至少需要满足四类设计要求。首先，角色边界要足够清晰，否则问题解析、规划、编码和验证之间容易互相覆盖，系统看似分工，实际却难以定位错误来源。其次，中间表示应尽可能稳定，也就是让智能体通过结构化工件协作，而不是完全依赖自由文本讨论。再次，系统必须为外部知识和外部工具预留标准化接入口，这样才能在不推翻整体架构的前提下替换知识库、执行环境和图算法库。最后，闭环验证是不可缺少的环节，多智能体系统不应只追求生成更多答案，而应追求更快发现错误并修正错误。
 
 这几项原则本质上体现了从语言生成系统向可控推理系统的转变。对于图推理任务而言，这种转变尤其重要，因为很多失败并非来自语义理解完全错误，而是来自中间流程缺少稳定约束，导致错误 API 被调用、关键条件被遗漏或格式结果不一致。从功能分工看，问题解析、规划组织、知识检索、程序实现与结果验证可以分别由不同角色承担。这种按角色划分局部目标的方式，有助于降低一次性端到端生成的风险，也为后续章节讨论规划反馈闭环提供了协作基础。
 
 \section{相关技术总结}
 
-前述各节分别从图推理任务基础、大语言模型推理增强、工具增强与多智能体协同等角度梳理了本文工作的技术背景。为了进一步明确相关工作的整体位置和本文方法的切入点，本节从方法谱系、任务能力分解和相关工作比较三个层面对已有技术进行归纳。
+前述各节分别从图推理任务基础、大语言模型推理增强、工具增强与多智能体协同等角度梳理了本文工作的技术背景。为了明确相关工作的整体位置和本文方法的切入点，本节从方法谱系、任务能力分解和相关工作比较三个层面对已有技术进行归纳。
 
 \subsection{图推理相关方法谱系}
 
@@ -141,11 +141,11 @@ NetworkX 是 Python 生态中使用广泛的图计算库，支持丰富的图结
 \label{fig:llm_graph_reasoning_taxonomy}
 \end{figure}
 
-进一步看，右上象限的方法更强调工具使用、多智能体协同和闭环控制，例如 Toolformer、ToolLLM、Gorilla、GraphTeam、GraphAgent-Reasoner、CAMEL、MetaGPT、AgentVerse 与 MA-GTS 等，体现出方法研究正从提升单次回答质量逐步转向构建可组织、可回退、可协作的系统\cite{schick2023toolformer,qin2023toolllm,gorilla2024,li2024graphteam,hu2024graphagentreasoner,camel2023,metagpt2023,agentverse2023,yuan2025magts}。与此同时，DPTS、HyperTree Planning、Graph-enhanced Plan Reasoning、ARise、Decision Pivots 与 ReAct 等工作位于图中上半区域，说明近年来越来越多研究开始通过显式搜索、层次规划、图式计划表示和风险感知推理来增强复杂任务求解过程的稳定性\cite{ding2025dpts,gui2025hypertree,lin2024plangraph,zhang2025arise,cho2025decisionpivots,yao2023react}。整体来看，这一二维谱系图反映出相关研究正在沿着从通用推理到图任务适配、从单次生成到系统化协同两条主线持续演化，而本文工作同时面向图任务适配与系统化协同闭环，因而与上述两条研究趋势相对应。
+右上象限的方法更强调工具使用、多智能体协同和闭环控制，例如 Toolformer、ToolLLM、Gorilla、GraphTeam、GraphAgent-Reasoner、CAMEL、MetaGPT、AgentVerse 与 MA-GTS 等，体现出方法研究正从提升单次回答质量逐步转向构建可组织、可回退、可协作的系统\cite{schick2023toolformer,qin2023toolllm,gorilla2024,li2024graphteam,hu2024graphagentreasoner,camel2023,metagpt2023,agentverse2023,yuan2025magts}。DPTS、HyperTree Planning、Graph-enhanced Plan Reasoning、ARise、Decision Pivots 与 ReAct 等工作位于图中上半区域，说明近年来越来越多研究开始通过显式搜索、层次规划、图式计划表示和风险感知推理来增强复杂任务求解过程的稳定性\cite{ding2025dpts,gui2025hypertree,lin2024plangraph,zhang2025arise,cho2025decisionpivots,yao2023react}。整体来看，这一二维谱系图反映出相关研究正在沿着从通用推理到图任务适配、从单次生成到系统化协同两条主线持续演化，而本文工作同时面向图任务适配与系统化协同闭环，因而与上述两条研究趋势相对应。
 
 \subsection{图推理任务谱系与能力分解}
 
-为了更系统地理解图推理问题的研究范围，本文进一步将常见任务划分为五类：结构查询类、路径搜索类、排序与可达性类、网络流与匹配类以及组合优化类。结构查询类任务通常关注邻居、度数、连通分量和局部关系判断，更依赖图构建的准确性；路径搜索类任务关注最短路径、可达性与遍历顺序，要求系统稳定处理边权、方向和路径格式；排序与可达性类任务强调全局先后约束，例如拓扑排序和有向无环图判定；网络流与匹配类任务要求对容量、配对约束和全局最优性同时建模；组合优化类任务如最大团、最小点覆盖和旅行商问题，则进一步提高了搜索复杂度和验证难度。
+为了更系统地理解图推理问题的研究范围，本文将常见任务划分为五类：结构查询类、路径搜索类、排序与可达性类、网络流与匹配类以及组合优化类。结构查询类任务通常关注邻居、度数、连通分量和局部关系判断，更依赖图构建的准确性；路径搜索类任务关注最短路径、可达性与遍历顺序，要求系统稳定处理边权、方向和路径格式；排序与可达性类任务强调全局先后约束，例如拓扑排序和有向无环图判定；网络流与匹配类任务要求对容量、配对约束和全局最优性同时建模；组合优化类任务如最大团、最小点覆盖和旅行商问题，则提高了搜索复杂度和验证难度。
 
 \begin{table}[htbp]
 \centering
@@ -154,7 +154,7 @@ NetworkX 是 Python 生态中使用广泛的图计算库，支持丰富的图结
 \label{tab:task_taxonomy}
 \renewcommand{\arraystretch}{1.15}
 \begin{tabularx}{\textwidth}{
->{\raggedright\arraybackslash}p{2.5cm}
+>{\raggedright\arraybackslash}p{2.9cm}
 >{\raggedright\arraybackslash}X
 >{\raggedright\arraybackslash}X}
 \toprule
@@ -194,15 +194,15 @@ NetworkX 是 Python 生态中使用广泛的图计算库，支持丰富的图结
 结构感知提示 & 图结构提示或图任务对齐方法 & 可选 & 否 & 弱 \\
 程序生成方法 & 将图任务转化为代码求解 & 可选 & 是 & 弱 \\
 多智能体方法 & 多角色协作完成规划、生成与修复 & 可选 & 可选 & 部分具备 \\
-本文方法 & 规划引导检索、程序执行与反馈修复 & 是 & 是 & 强闭环 \\
+本文方法 & 规划引导检索、执行与反馈修复 & 是 & 是 & 强闭环 \\
 \bottomrule
 \end{tabularx}
 \end{table}
 
 表中比较的是方法机制层面的典型特征，而非对所有具体实现作绝对判定。其中，外部知识指是否显式引入文档、样例库、代码库或检索知识；程序执行指候选程序是否被真实运行；验证闭环指系统能否依据执行结果自动触发修复、补充检索或上游回退。若方法仅进行单次程序执行，或依赖角色讨论完成检查但缺少稳定的自动反馈路径，本文将其归为弱反馈或回退有限。
 
-由表\ref{tab:related_compare}可见，现有方法之间的差异并不只体现在是否使用图结构这一单一维度上，而更多体现在是否引入外部知识、是否真正执行程序，以及是否形成可回退的验证闭环。直接提示推理与结构感知提示方法更关注输入表达和单次生成质量，程序生成方法开始借助外部执行提升精确性，多智能体方法则尝试通过角色协作增强复杂任务处理能力，但在统一规划表示、检索支撑和反馈推理的协同组织上仍有进一步整合空间。基于这一观察，后续方法章节将围绕显式规划、知识检索、程序执行与反馈推理的协同机制展开。
+由表\ref{tab:related_compare}可见，现有方法之间的差异并不只体现在是否使用图结构这一单一维度上，而更多体现在是否引入外部知识、是否真正执行程序，以及是否形成可回退的验证闭环。直接提示推理与结构感知提示方法更关注输入表达和单次生成质量，程序生成方法开始借助外部执行提升精确性，多智能体方法则尝试通过角色协作增强复杂任务处理能力，但在统一规划表示、检索支撑和反馈推理的协同组织上仍有整合空间。基于这一观察，后续方法章节将围绕显式规划、知识检索、程序执行与反馈推理的协同机制展开。
 
 \section{本章小结}
 
-本章从图推理任务基础、大语言模型推理增强、工具增强与多智能体协同以及相关技术总结等方面，梳理了本文工作的理论基础。综合现有研究可以看出，图推理问题天然适合采用结构化规划、外部知识调用、程序执行与多角色协同相结合的混合求解范式，而显式规划、检索支撑和验证闭环则为复杂图任务中的稳定求解提供了进一步支撑。下一章将对所提方法进行详细说明。
+本章从图推理任务基础、大语言模型推理增强、工具增强与多智能体协同以及相关技术总结等方面，梳理了本文工作的理论基础。综合现有研究可见，图推理问题天然适合采用结构化规划、外部知识调用、程序执行与多角色协同相结合的混合求解范式，而显式规划、检索支撑和验证闭环则为复杂图任务中的稳定求解提供了额外支撑。下一章将对所提方法进行详细说明。
