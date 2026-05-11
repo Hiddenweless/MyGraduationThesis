@@ -1,0 +1,949 @@
+\documentclass[sigconf,review,anonymous]{acmart}
+
+\usepackage[ruled,vlined]{algorithm2e}
+\usepackage{booktabs}
+\usepackage{pgfplots}
+\usepackage{float}
+\usepackage{tikz}
+\usepackage{enumitem}
+\usepackage{placeins}
+\pgfplotsset{compat=1.18}
+\setlength{\textfloatsep}{6pt}
+\setlength{\floatsep}{6pt}
+
+\settopmatter{printfolios=true}
+
+\title{PlanGraph: Planning-Feedback Multi-Agent Reasoning for Graph Problems}
+
+\begin{abstract}
+
+Large language models (LLMs) have recently shown strong capabilities in natural language understanding, complex reasoning, and program generation, creating new opportunities for automated graph reasoning. However, graph reasoning involves strong topological dependencies and explicit task constraints. Existing methods often serialize graphs into text and rely on end-to-end reasoning, which makes it difficult to preserve graph topology and satisfy task constraints under long inputs. Another line of work improves code generation with curated task-code repositories or specialized fine-tuning, but such experience-driven solutions are costly to maintain and often generalize poorly to unseen graph tasks.
+
+To address these limitations, we propose \textbf{PlanGraph}, a planning-feedback multi-agent framework for graph reasoning. PlanGraph organizes problem solving into three stages: \textit{planning generation}, \textit{plan-guided retrieval}, and \textit{execution-verified feedback reasoning}. First, question and planning agents transform the natural language task into structured pseudocode that explicitly represents task goals, algorithmic steps, and constraints. Next, a retrieval agent uses the generated plan to retrieve relevant APIs and implementation knowledge from external graph algorithm documentation, and performs snippet refinement or supplementary retrieval when needed. Finally, a coding agent generates executable programs conditioned on both the plan and retrieved knowledge, while an execution-based feedback loop performs testing, error diagnosis, bounded repair, and regeneration. In this way, planning constrains downstream knowledge use and program generation, while feedback corrects implementation deviations and omitted constraints.
+
+We evaluate PlanGraph on five graph reasoning benchmarks: GraphArena, NLGraph, GraphWiz, LLM4DyG, and GraphInstruct. PlanGraph achieves the best performance on four of the five benchmarks, reaches an average exact match score of 97.66\%, and outperforms existing methods overall. The results show that integrating explicit planning, external knowledge retrieval, and program verification into a feedback loop substantially improves the reliability, robustness, and generalization of LLM-based graph reasoning.
+
+\end{abstract}
+
+\keywords{graph reasoning, large language models, multi-agent systems, planning feedback, program verification}
+
+\begin{document}
+
+\maketitle
+
+\section{Introduction}
+
+Graphs are a fundamental data structure for representing complex relational systems in a wide range of real-world applications, including transportation networks, social interactions, biological systems, and software dependency graphs. Many important computational problems can be naturally formulated as graph reasoning tasks, such as shortest path computation, connectivity analysis, graph matching, and combinatorial optimization. Classical solutions to these problems rely on well-established graph algorithms and specialized computation libraries \cite{cormen2009clrs,diestel2017graph,korte2018combinatorial,hagberg2008networkx}, which provide precise and efficient procedures for performing graph analysis. As illustrated in Figure~\ref{fig:task_overview}, graph reasoning tasks typically start from a natural language query describing a graph problem, which must be interpreted over an underlying graph structure before performing algorithmic reasoning.
+
+Recent advances in large language models (LLMs) have significantly expanded the ability of AI systems to perform complex reasoning and program generation tasks. Techniques such as Chain-of-Thought prompting \cite{wei2022chain}, self-consistency decoding \cite{wang2023selfconsistency}, and structured reasoning paradigms including Tree-of-Thoughts \cite{yao2023tree} and Graph-of-Thoughts \cite{besta2024graph} have demonstrated remarkable success in solving mathematical reasoning, logical inference, and algorithmic problem-solving tasks. Furthermore, recent work has shown that LLMs can interact with external tools and generate executable programs to solve complex computational problems \cite{gao2023pal,schick2023toolformer,critic2023}. These developments suggest that LLMs have the potential to serve as general reasoning engines capable of solving structured computational tasks.
+
+However, applying LLMs to graph reasoning problems remains challenging. Unlike natural language or sequential data, graphs contain complex topological structures and relational dependencies that are difficult to represent in textual form. In practice, most existing approaches serialize graph structures into sequences of textual descriptions containing nodes, edges, and attributes. As the size and complexity of the graph increase, such serialized representations become extremely long and difficult for LLMs to interpret. As a result, models often struggle to accurately capture graph topology and relational constraints, leading to unstable reasoning behavior and hallucinated results.
+
+To better understand these challenges, several recent benchmarks have been proposed to evaluate LLM capabilities on graph reasoning tasks. Datasets such as GraphArena \cite{tang2025grapharena}, NLGraph \cite{chen2024nlgraph}, GraphWiz \cite{gong2024graphwiz}, and GraphInstruct \cite{graphinstruct2024} provide systematic evaluations of LLM performance on classical graph computation tasks, including connectivity queries, shortest path search, graph traversal, and combinatorial optimization problems. These studies reveal that although LLMs demonstrate promising reasoning abilities on small or structured examples, their performance often degrades significantly as graph complexity increases.
+
+Recent research has explored several directions for improving LLM-based graph reasoning. One line of work attempts to enhance graph understanding through specialized prompting strategies or instruction tuning \cite{tang2024graphgpt,pan2024graphllm}. Another direction focuses on leveraging code generation capabilities of LLMs to solve graph problems by invoking external graph computation libraries \cite{zhang2025gcoder,pseudocode2025}. In addition, multi-agent frameworks have been proposed to improve reasoning reliability by decomposing tasks into collaborative submodules \cite{li2024graphteam}. These approaches have demonstrated encouraging improvements over direct prompting methods.
+
+\begin{figure}[t]
+\centering
+\includegraphics[width=\columnwidth]{intro.pdf}
+\caption{Illustration of graph reasoning tasks studied in this work. 
+A natural language query describing a graph problem is first mapped to a graph structure, 
+followed by graph reasoning tasks such as shortest path, maximum clique, and TSP, 
+which ultimately produce the final answer.}
+\label{fig:task_overview}
+\end{figure}
+
+Despite these advances, existing approaches still face two persistent limitations. First, end-to-end reasoning over serialized graph inputs forces the model to jointly handle task interpretation, structural recovery, algorithm selection, and answer generation, which often leads to topological omissions, constraint violations, and unstable outputs as graph complexity grows. Second, many code-generation-based solutions depend on curated task-code repositories, historical exemplars, or specialized fine-tuning. Although such experience-driven strategies can improve performance on seen tasks, they introduce high maintenance costs and do not transfer reliably to new graph reasoning problems.
+
+Inspired by how human experts solve constrained problems through explicit planning and subsequent correction, we propose a planning-feedback reasoning paradigm for graph problem solving. Instead of treating graph reasoning as a single generation step, our approach first constructs a structured plan, then uses that plan to organize knowledge retrieval and program synthesis, and finally uses execution feedback to repair implementation errors or missing constraints.
+
+In this paper, we introduce \textbf{PlanGraph}, a planning-feedback multi-agent framework designed to improve the reliability and generalization of LLM-based graph reasoning systems. PlanGraph decomposes graph problem solving into three collaborative stages: planning generation, plan-guided retrieval, and execution-verified feedback reasoning. First, a planning module converts the natural language task description into structured pseudocode representing task goals, algorithmic steps, and constraints. Second, a retrieval module uses these planning results to retrieve relevant algorithmic knowledge from external sources such as graph library documentation, and refines the retrieved knowledge when coverage is insufficient. Finally, a reasoning module generates executable programs, tests them through execution, and uses bounded repair or regeneration when failures occur.
+
+By explicitly separating planning from execution and coupling generation with feedback, PlanGraph reduces the reasoning burden placed on LLMs and provides a structured pathway for solving complex graph problems. The plan-guided retrieval mechanism enables the system to dynamically access external algorithmic knowledge, while the execution-feedback loop prevents many implementation errors from propagating directly to the final answer.
+
+We evaluate PlanGraph on multiple graph reasoning benchmarks, including GraphArena, NLGraph, GraphWiz, LLM4DyG, and GraphInstruct. Experimental results show that PlanGraph achieves the best performance on four of the five benchmarks and improves overall performance over existing methods.
+
+The main contributions of this work are summarized as follows:
+
+\begin{itemize}[topsep=2pt,itemsep=2pt]
+
+\item We propose \textbf{PlanGraph}, a planning-feedback multi-agent framework for solving graph reasoning tasks with large language models.
+
+\item We introduce a \textbf{plan-guided retrieval mechanism} that leverages structured pseudocode and constraint-aware refinement to improve the precision of external knowledge retrieval.
+
+\item We design an \textbf{execution-verified feedback reasoning pipeline} that integrates program generation, execution testing, bounded repair, and regeneration to improve solution reliability.
+
+\item Extensive experiments on multiple graph reasoning benchmarks demonstrate that PlanGraph achieves the best performance on four of the five benchmarks and improves the robustness of LLM-based graph reasoning systems.
+
+\end{itemize}
+
+\section{Related Work}
+
+\subsection{LLM Reasoning and Tool-Augmented Problem Solving}
+
+Recent advances in large language models (LLMs) have significantly improved their ability to perform complex reasoning tasks. 
+Chain-of-Thought (CoT) prompting \cite{wei2022chain} demonstrated that generating intermediate reasoning steps can substantially improve model performance on arithmetic and logical problems. 
+Subsequent work proposed decoding strategies such as self-consistency \cite{wang2023selfconsistency}, which aggregates multiple reasoning paths to improve answer reliability. 
+More structured reasoning paradigms, including Tree-of-Thoughts \cite{yao2023tree} and Graph-of-Thoughts \cite{besta2024graph}, further extend this idea by enabling language models to explore multiple reasoning branches and structured reasoning paths during problem solving. 
+Other prompting strategies such as least-to-most prompting \cite{zhou2023least} decompose complex tasks into a sequence of simpler subproblems, allowing models to solve challenging tasks incrementally.
+
+Beyond prompting-based reasoning, recent research has explored integrating LLMs with external tools and program execution environments. 
+Program-Aided Language Models (PAL) \cite{gao2023pal} enable language models to generate executable programs for solving mathematical and symbolic tasks. 
+Toolformer \cite{schick2023toolformer} and related systems \cite{critic2023,qin2023toolllm} further extend this paradigm by allowing LLMs to dynamically invoke external APIs during reasoning. 
+These tool-augmented frameworks improve reliability by delegating precise computations to external programs or tools. 
+However, most existing approaches primarily focus on numerical, mathematical, or symbolic reasoning tasks, and their effectiveness on graph computation problems remains limited, especially when complex graph structures and topological dependencies must be interpreted from textual representations.
+
+\subsection{LLM-based Graph Reasoning}
+
+Recently, several studies have explored applying LLMs to graph analysis and graph reasoning tasks. 
+Benchmarks such as GraphArena \cite{tang2025grapharena}, NLGraph \cite{chen2024nlgraph}, GraphWiz \cite{gong2024graphwiz}, GraphInstruct \cite{graphinstruct2024}, and LLM4DyG \cite{llm4dyg2024} evaluate the capability of LLMs to solve classical graph computation problems, including connectivity queries, shortest path search, graph traversal, and combinatorial optimization tasks. 
+Experimental results on these benchmarks reveal that although LLMs demonstrate promising reasoning abilities on small or structured graphs, their performance often degrades significantly as graph size and structural complexity increase.
+
+To improve LLM performance on graph reasoning tasks, several research directions have been explored. 
+Some studies enhance structural understanding through graph-aware prompting strategies or instruction tuning techniques \cite{tang2024graphgpt,pan2024graphllm}. 
+Other approaches leverage the code generation capabilities of LLMs to solve graph problems by invoking external graph computation libraries such as NetworkX \cite{zhang2025gcoder,pseudocode2025}. 
+In addition, multi-agent systems such as GraphTeam \cite{li2024graphteam} attempt to improve reasoning reliability by decomposing graph reasoning tasks into collaborative subtasks handled by multiple agents.
+
+Despite these advances, existing approaches still face two major limitations. 
+First, many methods rely on end-to-end reasoning over serialized graph representations, which makes it difficult for language models to accurately capture graph topology and relational constraints. 
+Second, code-generation-based approaches often rely heavily on curated experience repositories such as task-code pairs or predefined algorithm templates. 
+Such experience-driven solutions incur high construction costs and may generalize poorly to unseen graph reasoning tasks. 
+Compared with multi-agent collaboration methods such as GraphTeam and program-generation methods such as GCoder, our proposed PlanGraph framework places an explicit planning layer between task understanding and implementation, and further uses execution feedback to revise programs, retrieval targets, or missing constraints when failures occur. This planning-feedback coupling is the main difference between PlanGraph and prior graph reasoning systems.
+
+
+\section{Methodology}
+
+\begin{figure*}[t]
+\centering
+\includegraphics[width=0.78\textwidth]{framework.pdf}
+\caption{Overview of the PlanGraph framework.}
+\label{fig:framework}
+\end{figure*}
+
+In this section, we present \textbf{PlanGraph}, a planning-feedback
+multi-agent framework designed for solving graph reasoning
+problems. Figure~\ref{fig:framework} illustrates the overall
+architecture of the proposed system. The key idea of PlanGraph
+is to decompose the reasoning process into three stages:
+planning generation, plan-guided retrieval, and
+execution-verified feedback reasoning.
+
+Instead of relying on direct end-to-end reasoning, PlanGraph
+introduces an explicit intermediate planning stage that
+structures the reasoning process before code generation,
+and an execution-feedback loop that revises incorrect
+implementations before they are accepted as final answers.
+This design allows the system to better integrate algorithmic
+knowledge and external graph computation tools, thereby
+improving the reliability and stability of graph reasoning.
+
+\subsection{Framework Overview}
+
+\paragraph{Problem Definition}
+
+Given a graph reasoning task described in natural language
+$Q$ and an associated graph $G=(V,E)$, where $V$ denotes the
+set of nodes and $E$ denotes the set of edges, the goal is to
+compute the correct answer $A$ that satisfies the requirements
+specified in the task description.
+
+Directly solving such problems using large language models
+(LLMs) is challenging due to the difficulty of understanding
+graph structures and the instability of direct code generation.
+To address these challenges, PlanGraph decomposes the reasoning
+process into three functional modules: \textit{planning generation},
+\textit{plan-guided retrieval}, and \textit{execution-verified feedback reasoning}.
+
+As illustrated in Figure~\ref{fig:framework}, the planning
+module first converts the original task description into
+structured pseudocode. The retrieval module augments the
+reasoning process with external algorithmic knowledge.
+Finally, the reasoning module generates executable programs
+and verifies their correctness through iterative testing
+and revision.
+
+\subsection{Planning Module}
+
+The planning module transforms an unstructured natural language
+problem into a structured reasoning plan.
+
+\subsubsection{Question Agent}
+
+The question agent extracts key information from the original
+task description in order to reduce the reasoning complexity
+for downstream modules.
+
+Formally, given the original question $Q$, the question agent
+generates a structured representation of the task:
+
+\begin{equation}
+(T, G) \leftarrow QuestionAgent(Q)
+\end{equation}
+
+where $T$ denotes the task description and $G$ represents the
+graph data extracted from the input.
+
+The task description $T$ specifies the reasoning objective
+and output requirements, while the graph data $G$ contains
+the nodes, edges, and edge attributes used for graph
+computation.
+
+\subsubsection{Planning Agent}
+
+After obtaining the structured task description $T$, the
+planning agent generates a reasoning plan describing how
+the problem should be solved.
+
+\begin{equation}
+P \leftarrow PlanningAgent(T)
+\end{equation}
+
+where $P$ denotes the generated planning pseudocode.
+
+The reasoning plan can be viewed as a sequence of algorithmic
+operations:
+
+\begin{equation}
+P = \{p_1, p_2, ..., p_n\}
+\end{equation}
+
+where each step $p_i$ corresponds to a specific graph
+operation such as graph construction, traversal, or path
+computation. The generated pseudocode serves as a structured
+guide for downstream retrieval and reasoning modules.
+
+\subsection{Plan-Guided Retrieval Module}
+
+During complex problem solving, human experts often consult
+external resources to obtain relevant algorithmic knowledge.
+Inspired by this observation, PlanGraph introduces a retrieval
+module that augments reasoning with information from graph
+algorithm documentation.
+
+\subsubsection{Knowledge Base}
+
+We construct a knowledge base from documentation of graph
+processing libraries such as NetworkX. Each entry in the
+knowledge base corresponds to a specific API and contains
+structured information describing the functionality of the
+API, including its name, semantic description, input
+parameters, return values, and example usage.
+
+These documentation entries are converted into vector
+representations and stored in a vector database to enable
+efficient semantic retrieval.
+
+\subsubsection{Search Agent}
+
+Given the planning pseudocode $P$, the search agent retrieves
+relevant knowledge entries from the documentation knowledge
+base.
+
+\begin{equation}
+K \leftarrow SearchAgent(P)
+\end{equation}
+
+where $K$ denotes the retrieved knowledge set
+
+\begin{equation}
+K = \{k_1, k_2, ..., k_m\}
+\end{equation}
+
+and each element $k_i$ represents a relevant documentation
+entry associated with a graph algorithm or API.
+
+Compared with traditional question-based retrieval, the
+plan-guided retrieval strategy leverages structured
+pseudocode to produce more precise queries, and can further
+refine or supplement retrieval when the returned knowledge
+is insufficient for the current planning steps.
+
+\subsection{Execution-Verified Feedback Reasoning Module}
+
+The reasoning module performs graph computation based on the
+planning pseudocode $P$, retrieved knowledge $K$, and graph
+data $G$.
+
+\subsubsection{Coding Agent}
+
+The coding agent generates executable Python code using the
+planning pseudocode and retrieved knowledge:
+
+\begin{equation}
+C_0 \leftarrow CodingAgent(P, K)
+\end{equation}
+
+where $C_0$ denotes the initial generated program. The
+generated code typically invokes graph processing libraries
+(e.g., NetworkX) to perform operations such as graph traversal,
+shortest path computation, or combinational optimization.
+
+\subsubsection{Execution and Verification}
+
+To ensure reliability, PlanGraph introduces a verification
+mechanism before applying the generated program to the
+actual graph data.
+
+First, the generated program is executed on a small test
+graph to verify basic correctness. If the program fails
+during testing, the system attempts to repair the code
+using a reasoning agent.
+
+The revision process can be expressed as
+
+\begin{equation}
+C_{t+1} \leftarrow ReasoningAgent(C_t, Error_t)
+\end{equation}
+
+where $C_t$ denotes the program generated at iteration $t$
+and $Error_t$ represents the execution error observed during
+testing.
+
+If the revision process fails to produce a valid program
+after several iterations, the system invokes the coding
+agent again to generate a new candidate solution:
+
+\begin{equation}
+C_0' \leftarrow CodingAgent(P, K)
+\end{equation}
+
+This procedure forms a two-level feedback mechanism:
+a \textit{repair loop} that attempts to fix incorrect
+programs using execution feedback, and a \textit{regeneration loop}
+that generates new programs when local repair fails or
+important constraints are still missing.
+
+Once a program successfully passes the unit test, it is
+executed on the actual graph data $G$ to compute the final
+result.
+
+\subsubsection{Answer Generation}
+
+After obtaining a verified program, the system executes it
+on the input graph $G$ and obtains the computation result
+$R$. The final answer is produced by formatting the result
+according to the task requirements:
+
+\begin{equation}
+A \leftarrow FormatAnswer(R)
+\end{equation}
+
+The overall inference pipeline of PlanGraph is summarized
+in Algorithm~\ref{alg:plangraph}.
+
+
+
+
+\subsection{Design Rationale}
+
+The design of PlanGraph is motivated by the observation that
+directly applying large language models to graph reasoning
+tasks often leads to unstable reasoning and hallucination.
+
+When solving graph problems, the model must simultaneously
+understand the problem description, recall relevant
+algorithms, and generate executable code. These requirements
+significantly increase the cognitive load of LLMs and often
+result in incorrect reasoning steps.
+
+To address this challenge, PlanGraph introduces an explicit
+planning stage that separates high-level reasoning from
+program execution. Instead of directly generating code,
+the planning module first produces structured pseudocode
+that decomposes the problem into a sequence of algorithmic
+operations.
+
+Another important component of the framework is the
+plan-guided retrieval mechanism. The pseudocode
+generated by the planning module contains explicit
+algorithmic operations that can be directly mapped to
+graph library APIs, enabling more accurate retrieval of
+relevant algorithmic knowledge and clearer diagnosis of
+retrieval failures.
+
+Finally, PlanGraph incorporates an execution-feedback mechanism
+to improve the reliability of generated solutions. By
+introducing testing, repair, and regeneration loops, the
+system can detect execution failures, localize errors, and
+iteratively refine the generated program before applying it
+to the target graph.
+
+Together, these design choices enable PlanGraph to combine
+the reasoning capabilities of LLMs with the precision of
+graph algorithms, resulting in more reliable graph reasoning.
+
+\begin{algorithm}[t]
+\caption{PlanGraph Inference Pipeline}
+\label{alg:plangraph}
+
+\KwIn{Graph reasoning question $Q$}
+\KwOut{Final answer $A$}
+
+$(T,G) \leftarrow QuestionAgent(Q)$
+
+$P \leftarrow PlanningAgent(T)$
+
+$K \leftarrow SearchAgent(P)$
+
+\While{solution not verified}{
+
+Generate program $C$ using CodingAgent
+
+Run unit test
+
+\If{test fails}{
+Revise program using ReasoningAgent
+}
+
+\If{revision fails}{
+Regenerate program using CodingAgent
+}
+
+}
+
+Execute $C$ on graph $G$
+
+Extract result $R$
+
+$A \leftarrow FormatAnswer(R)$
+
+\Return $A$
+
+\end{algorithm}
+
+\subsection{Summary}
+
+PlanGraph decomposes graph reasoning into three collaborative
+stages: planning generation, plan-guided retrieval, and
+execution-verified feedback reasoning. By combining
+structured reasoning plans, retrieval grounded in planning
+semantics, and feedback-driven program execution, the
+framework enables reliable collaboration between language
+models and graph computation tools.
+
+\section{Experiments}
+
+In this section, we evaluate the effectiveness of the proposed
+\textbf{PlanGraph} framework on several graph reasoning benchmarks.
+Our experiments aim to answer the following research questions:
+
+\textbf{RQ1}: How does PlanGraph perform compared with existing
+LLM-based graph reasoning systems?
+
+\textbf{RQ2}: How does PlanGraph perform across different
+graph reasoning benchmarks?
+
+\textbf{RQ3}: How much improvement does PlanGraph achieve over
+strong existing graph reasoning methods?
+
+\textbf{RQ4}: How important are different modules in the framework?
+
+
+\subsection{Experimental Setup}
+
+\subsubsection{Datasets}
+
+We evaluate PlanGraph on five widely used graph reasoning benchmarks:
+
+\textbf{GraphArena}, \textbf{NLGraph}, \textbf{GraphWiz},
+\textbf{LLM4DyG}, and \textbf{GraphInstruct}.
+
+GraphArena focuses on classical graph computational problems,
+including both polynomial-time tasks such as connectivity
+analysis and shortest distance computation, as well as
+NP-hard combinatorial optimization problems including
+maximum clique, minimum vertex cover, and the traveling
+salesman problem.
+
+NLGraph is a natural language graph reasoning benchmark
+that contains multiple algorithmic tasks such as connectivity,
+maximum flow computation, cycle detection, topological sorting,
+and shortest path queries.
+
+GraphWiz evaluates graph reasoning ability through
+instruction-style graph algorithm tasks and requires models
+to follow algorithmic instructions to solve graph problems.
+
+LLM4DyG focuses on reasoning over dynamic graphs where
+temporal constraints are introduced into graph queries.
+The benchmark evaluates whether models can correctly
+perform reasoning over time-evolving graph structures.
+
+GraphInstruct evaluates instruction-following capability
+for graph reasoning tasks such as depth-first search,
+neighbor queries, predecessor queries, and topological
+sorting.
+
+Unless otherwise specified, all reported results are evaluated
+under the public benchmark settings and are computed using
+exact-match comparison with ground-truth answers.
+
+
+\subsubsection{Baselines}
+
+We compare PlanGraph with three representative baselines.
+First, we report the direct reasoning performance of
+\textbf{GPT-4o}, which serves as a strong general-purpose LLM
+baseline without task-specific graph reasoning scaffolding.
+Second, we compare against \textbf{GraphTeam}, a representative
+multi-agent graph reasoning framework. Third, we compare against
+\textbf{GCoder}, a representative program-generation-based graph
+reasoning method.
+
+These two methods are chosen because they represent the two
+strongest and most relevant technical routes for the evaluated
+benchmarks: GraphTeam emphasizes multi-agent collaboration for
+graph analysis, while GCoder emphasizes graph problem solving
+through executable code generation. In the reported benchmark
+results available from prior work, they also provide the strongest
+or near-strongest published baselines.
+
+
+\subsubsection{Evaluation Metric}
+
+Following previous work on graph reasoning benchmarks,
+we adopt \textbf{Exact Match (EM)} as the main evaluation metric.
+A prediction is considered correct only if the generated
+answer exactly matches the ground-truth result.
+
+
+\begin{table*}[t]
+\centering
+\caption{Average exact match (\%) across graph reasoning benchmarks. 
+Improvement is computed against the best baseline for each dataset.}
+
+\setlength{\tabcolsep}{10pt}
+\renewcommand{\arraystretch}{1.2}
+
+\begin{tabular}{lcccccc}
+\toprule
+Dataset & \#Tasks & GPT-4o & GraphTeam & GCoder & PlanGraph & Improvement \\
+\midrule
+GraphArena & 10 & 49.08 & 95.14 & 94.27 & \textbf{97.74} & +2.60 \\
+NLGraph & 8 & 51.40 & 97.71 & 96.90 & \textbf{98.72} & +1.01 \\
+GraphWiz & 9 & 47.61 & 88.62 & 90.20 & \textbf{97.01} & +6.81 \\
+LLM4DyG & 9 & 58.04 & \textbf{96.35} & 93.78 & 96.11 & -0.24 \\
+GraphInstruct & 9 & 78.18 & 98.33 & 97.39 & \textbf{98.74} & +0.41 \\
+\midrule
+Average & -- & 56.86 & 95.23 & 94.51 & \textbf{97.66} & +2.12 \\
+\bottomrule
+\end{tabular}
+
+\label{tab:overall}
+\end{table*}
+
+
+\subsection{Overall Performance}
+
+Table~\ref{tab:overall} summarizes the average exact-match performance of
+PlanGraph across five graph reasoning benchmarks. These
+benchmarks cover a total of 45 task types included in the main evaluation, including
+classical graph algorithms, combinatorial optimization
+problems, instruction-following tasks, and dynamic graph
+reasoning scenarios. The results in Table~\ref{tab:overall}
+directly answer \textbf{RQ1} and \textbf{RQ3} by comparing
+PlanGraph with existing LLM-based systems and measuring
+its performance improvement over strong graph reasoning
+baselines.
+
+Overall, PlanGraph achieves the best performance on four
+out of five benchmarks and improves the average exact-match
+score from 95.23\% (best prior baseline) to 97.66\%, corresponding
+to an average improvement of +2.12 percentage points.
+These results show that the proposed planning-feedback
+multi-agent framework consistently improves the reliability
+of LLM-based graph reasoning systems.
+
+The largest improvement is observed on the GraphWiz
+benchmark, where PlanGraph increases the exact-match score from
+90.20\% (GCoder) to 97.01\%, achieving a gain of
++6.81 points. GraphWiz contains several challenging
+graph reasoning tasks such as Hamiltonian path detection
+and subgraph matching, which require precise reasoning
+over graph structures. The result indicates that the
+planning-feedback reasoning pipeline can effectively guide
+LLMs to perform structured reasoning, retrieve more relevant
+algorithmic knowledge, and correct execution errors before
+they propagate to final answers.
+
+PlanGraph also achieves consistent improvements on
+GraphArena and NLGraph, improving the best baseline
+results by +2.60 and +1.01 points respectively.
+These datasets mainly consist of classical graph
+algorithm problems such as connectivity analysis,
+maximum flow computation, and shortest path queries.
+The results suggest that combining structured planning
+with programmatic graph computation enables more reliable
+execution of graph algorithms.
+
+On the LLM4DyG benchmark, which focuses on temporal
+graph reasoning tasks, PlanGraph achieves performance
+comparable to the best existing method. Although the
+result is slightly lower than the strongest prior baseline
+(-0.24 points), the difference is marginal and the
+framework still maintains strong performance across
+dynamic graph queries.
+
+Finally, PlanGraph achieves the highest exact-match score on the
+GraphInstruct benchmark with 98.74\%, outperforming both
+GraphTeam and GCoder. This result demonstrates that the
+proposed framework generalizes well to instruction-based
+graph reasoning tasks and can effectively handle a wide
+range of graph analysis problems.
+
+Overall, these results show that the planning-feedback
+multi-agent reasoning framework consistently improves
+the performance of LLM-based graph reasoning systems
+across diverse benchmarks.
+
+
+\subsection{Analysis by Task Categories}
+
+To further analyze the reasoning capabilities of PlanGraph,
+we examine its performance across different categories of
+graph reasoning tasks.
+
+Specifically, we group tasks from multiple benchmarks into
+several representative categories, including graph structure
+analysis, shortest path computation, matching problems,
+flow optimization, and Hamiltonian problems. These categories
+cover a broad range of classical graph algorithms and
+combinatorial reasoning tasks.
+
+\begin{figure}[h]
+\centering
+\includegraphics[width=\columnwidth]{task_category.pdf}
+\caption{Performance comparison across graph reasoning task categories.}
+\label{fig:task_category}
+\end{figure}
+
+Figure~\ref{fig:task_category} presents the comparison
+between GPT-4o, strong prior methods, and
+PlanGraph across these task categories.
+
+As shown in Figure~\ref{fig:task_category}, PlanGraph achieves
+the highest exact-match performance on matching problems and graph structure
+analysis tasks, reaching nearly perfect performance.
+These problems can typically be solved using well-defined
+graph algorithms such as bipartite matching, connectivity
+analysis, and graph traversal, which can be effectively
+represented through the generated planning pseudocode.
+
+For shortest path and Hamiltonian problems, PlanGraph also
+achieves very high performance, demonstrating that the generated
+programs can reliably perform graph traversal and
+combinatorial search operations. The planning stage provides
+a structured reasoning process that allows the system to
+identify the appropriate algorithms and execute them through
+graph computation libraries.
+
+Flow optimization tasks show slightly lower performance compared
+with other categories. This is mainly because flow algorithms
+often involve more complex implementation details such as
+residual graphs and capacity constraints, which increases
+the difficulty of code generation and reasoning.
+
+Overall, the results indicate that PlanGraph performs
+robustly across diverse graph reasoning tasks and generalizes
+well across multiple benchmarks.
+
+\subsection{Case Study}
+
+To further understand how \textbf{PlanGraph} solves graph reasoning
+problems, we present a qualitative case study on a Traveling
+Salesman Problem (TSP) instance from the GraphArena benchmark.
+The purpose of this analysis is to illustrate the internal
+reasoning process of the proposed framework and demonstrate
+how the planning-feedback pipeline improves reasoning reliability.
+
+\begin{figure}[t]
+\centering
+\includegraphics[width=\columnwidth]{case1.pdf}
+\caption{Example TSP instance used in the case study.}
+\label{fig:case_tsp}
+\end{figure}
+
+
+Figure~\ref{fig:case_tsp} illustrates a representative TSP
+problem used in the case study. The graph contains five nodes
+with weighted edges representing pairwise distances between
+nodes. The objective is to find the shortest Hamiltonian cycle
+starting from node A that visits each node exactly once and
+returns to the starting node.
+
+Directly solving such combinatorial optimization problems
+with large language models is challenging because the model
+must simultaneously understand the graph structure, identify
+the appropriate algorithm, and generate executable code.
+Without structured reasoning guidance, direct prompting
+methods often produce incomplete paths or violate the
+Hamiltonian constraint.
+
+To address this issue, PlanGraph decomposes the reasoning
+process into structured stages including planning generation,
+plan-guided retrieval, and execution-verified feedback reasoning.
+
+\begin{figure}[t]
+\centering
+\includegraphics[width=\columnwidth]{case2.pdf}
+\caption{Reasoning process of PlanGraph on the TSP example.}
+\label{fig:case_pipeline}
+\end{figure}
+
+Figure~\ref{fig:case_pipeline} illustrates the reasoning
+pipeline of PlanGraph when solving the TSP instance. First,
+the planning module analyzes the task description and
+generates structured pseudocode that decomposes the problem
+into algorithmic operations such as graph construction,
+candidate tour enumeration, and path cost computation.
+This planning step provides a clear reasoning structure
+for the downstream modules and makes key constraints explicit
+before program generation starts.
+
+Next, the retrieval module identifies relevant algorithmic
+knowledge from graph API documentation based on the
+generated pseudocode. When the initial evidence is not
+sufficient, the system can refine the retrieved snippets
+or supplement them with additional retrieval conditioned on
+the current planning steps and missing constraints.
+
+Using the planning pseudocode and retrieved knowledge,
+the coding agent generates executable Python code that
+implements the corresponding graph computation. Before
+applying the generated program to the target graph,
+PlanGraph performs execution verification by running the
+program on a test graph. If execution errors occur, the
+reasoning agent revises the generated code using execution
+feedback. If local repair is insufficient, the system can
+regenerate a new candidate under the same planning guidance.
+
+Finally, the verified program is executed on the input
+graph to compute the optimal tour. In this example, the
+system returns the path
+\[
+A \rightarrow B \rightarrow E \rightarrow D \rightarrow C \rightarrow A
+\]
+with a total cost of 14.
+
+This case study demonstrates how PlanGraph decomposes a
+complex graph reasoning task into structured planning,
+knowledge retrieval, and feedback-driven program execution.
+By separating planning from implementation and introducing
+execution feedback, the framework reduces hallucination,
+improves constraint satisfaction, and strengthens the
+reliability of LLM-based graph reasoning systems.
+
+\subsection{Ablation Study}
+
+To evaluate the contribution of each component in the
+PlanGraph framework, we conduct an ablation study by
+removing individual modules from the system.
+
+Specifically, we evaluate three variants:
+
+\textbf{w/o Planning}: removing the planning module and
+directly generating code from the question.
+
+\textbf{w/o Retrieval}: removing the plan-guided
+knowledge retrieval module.
+
+\textbf{w/o Verification}: removing the execution
+verification and code revision mechanism.
+
+\begin{table}[t]
+\centering
+\caption{Ablation study of PlanGraph.}
+\label{tab:ablation}
+\begin{tabular}{lccc}
+\toprule
+Method & GraphArena & NLGraph & GraphWiz \\
+\midrule
+PlanGraph & \textbf{97.88} & \textbf{98.72} & \textbf{97.01} \\
+w/o Planning & 86.35 & 89.14 & 84.27 \\
+w/o Retrieval & 94.12 & 95.33 & 92.48 \\
+w/o Verification & 92.67 & 94.01 & 90.72 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+Table~\ref{tab:ablation} presents the ablation results on
+three representative benchmarks. The results clearly
+demonstrate the contribution of each component in the
+PlanGraph framework.
+
+Removing the planning module leads to the largest
+performance drop across all datasets. On GraphArena,
+the exact-match score decreases from 97.74\% to 86.35\%.
+This result confirms that the planning stage plays a
+critical role in guiding the reasoning process.
+Without structured pseudocode, the model must directly
+generate executable programs from natural language
+descriptions, which significantly increases the
+difficulty of algorithm selection and reasoning.
+
+Removing the verification mechanism also causes
+noticeable performance degradation. The exact-match score drops
+to 92.67\% on GraphArena and 90.72\% on GraphWiz.
+This observation indicates that execution feedback is
+essential for detecting and correcting errors in
+generated programs. The verification loop enables the
+system to iteratively repair incorrect code before
+applying it to the target graph.
+
+The retrieval module provides additional algorithmic
+knowledge by linking the generated planning pseudocode
+to relevant graph APIs. When this component is removed,
+the performance decreases moderately but remains higher
+than the variants without planning or verification.
+This suggests that while retrieval improves reasoning
+efficiency and code generation quality, the planning
+and verification modules play more critical roles in
+the overall reasoning pipeline.
+
+Overall, these results validate the design of the
+PlanGraph framework and demonstrate that planning,
+retrieval, and feedback-driven verification work
+together to improve the reliability of LLM-based
+graph reasoning.
+
+\section{Conclusion}
+
+In this paper, we propose \textbf{PlanGraph}, a planning-feedback multi-agent framework for improving large language model reasoning on graph computation tasks. By introducing an explicit planning stage, PlanGraph decomposes complex graph problems into structured algorithmic steps and uses plan-guided retrieval to support reliable program generation. The framework further integrates execution-based feedback to refine generated programs, correct omitted constraints, and reduce hallucination errors. Extensive experiments on multiple graph reasoning benchmarks show that PlanGraph achieves the best performance on four of the five evaluated benchmarks, reaches an average exact-match score of 97.66\%, and improves overall performance over strong existing methods.
+
+\nocite{*}
+\bibliographystyle{ACM-Reference-Format}
+\bibliography{references}
+
+
+\appendix
+
+\section{Detailed Benchmark Results}
+
+Due to space limitations in the main paper, this appendix
+reports the detailed per-task results of PlanGraph on all
+evaluated benchmarks. For completeness, we present the
+performance of PlanGraph together with several representative
+baselines on each individual task. All reported results are
+reported under the corresponding public evaluation settings. Unless otherwise
+specified, the base language model used in our framework is
+GPT-4o.
+
+The reported benchmarks cover a diverse set of graph reasoning
+tasks, including classical graph algorithms, combinatorial
+optimization problems, and instruction-based graph queries,
+providing a comprehensive view of the performance of PlanGraph
+across different graph reasoning scenarios.
+
+\subsection{GraphArena}
+\vspace{-6pt}
+\begin{table}[H]
+\centering
+\caption{Detailed results on GraphArena (\%).}
+\begin{tabular}{lcccc}
+\toprule
+Task & GPT-4o & GraphTeam & GCoder & PlanGraph \\
+\midrule
+CN & 100.0 & 100.0 & 100.0 & 100.0 \\
+CC & 100.0 & 100.0 & 100.0 & 100.0 \\
+SD & 100.0 & 100.0 & 100.0 & 100.0 \\
+GD & 100.0 & 100.0 & 100.0 & 100.0 \\
+GED & 23.3 & 91.0 & 89.5 & 96.5 \\
+MIS & 22.4 & 97.8 & 96.8 & 98.8 \\
+MVC & 19.3 & 98.6 & 97.6 & 100.0 \\
+MCP & 12.5 & 90.5 & 88.7 & 100.0 \\
+MCS & 8.4 & 90.8 & 89.4 & 95.3 \\
+TSP & 4.9 & 82.7 & 80.7 & 86.8 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{NLGraph}
+\vspace{-6pt}
+\begin{table}[H]
+\centering
+\caption{Detailed results on NLGraph (\%).}
+\begin{tabular}{lcccc}
+\toprule
+Task & GPT-4o & GraphTeam & GCoder & PlanGraph \\
+\midrule
+CONN & 92.10 & 100.0 & 100.0 & 100.0 \\
+MF & 67.30 & 93.67 & 94.10 & 97.53 \\
+CYC & 95.80 & 100.0 & 100.0 & 100.0 \\
+TOPO & 60.50 & 91.20 & 92.80 & 94.80 \\
+SP & 72.40 & 100.0 & 100.0 & 100.0 \\
+BM & 81.30 & 100.0 & 100.0 & 100.0 \\
+HP & 40.70 & 100.0 & 100.0 & 100.0 \\
+GNN & 52.10 & 96.80 & 97.40 & 97.40 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{GraphWiz}
+\begin{table}[H]
+\centering
+\caption{Detailed results on GraphWiz (\%).}
+\begin{tabular}{lcccc}
+\toprule
+Task & GPT-4o & GraphTeam & GCoder & PlanGraph \\
+\midrule
+CYC & 95.00 & 100.0 & 100.0 & 100.0 \\
+CONN & 70.30 & 86.50 & 90.20 & 91.20 \\
+BIP & 82.70 & 96.30 & 98.00 & 100.0 \\
+TOPO & 75.20 & 100.0 & 100.0 & 96.50 \\
+SP & 78.60 & 95.00 & 96.40 & 98.50 \\
+MTS & 71.80 & 94.00 & 95.10 & 93.80 \\
+MF & 69.10 & 94.00 & 94.70 & 95.10 \\
+HP & 15.40 & 32.50 & 40.20 & 99.20 \\
+SM & 88.30 & 99.30 & 99.50 & 98.80 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{LLM4DyG}
+
+\begin{table}[H]
+\centering
+\small
+\caption{Detailed results on LLM4DyG (\%).}
+\begin{tabular}{lccccc}
+\toprule
+Task & GPT-4o & LLM4DyG & GraphTeam & GCoder & PlanGraph \\
+\midrule
+WL & 58.00 & 47.30 & 96.33 & 94.33 & 98.67 \\
+WC & 67.33 & 64.10 & 94.33 & 94.78 & 93.56 \\
+WTC & 87.67 & 63.00 & 100.00 & 97.08 & 100.00 \\
+WN & 33.33 & 45.90 & 95.33 & 94.74 & 97.47 \\
+WNB & 44.67 & 20.00 & 100.00 & 94.83 & 100.00 \\
+CTC & 77.33 & 66.70 & 99.67 & 100.00 & 99.33 \\
+CTP & 57.67 & 59.80 & 87.00 & 100.00 & 92.03 \\
+FTP & 46.67 & 80.80 & 81.00 & 74.58 & 84.57 \\
+SE & 49.67 & 35.80 & 99.67 & 93.67 & 99.33 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{GraphInstruct}
+
+\begin{table}[H]
+\centering
+\small
+\caption{Detailed results on GraphInstruct (\%).}
+\begin{tabular}{lccccc}
+\toprule
+Task & GPT-4o & GraphInstruct & GraphTeam & GCoder & PlanGraph \\
+\midrule
+NB & 98.00 & 99.00 & 100.00 & 99.53 & 100.00 \\
+BIP & 89.67 & 85.00 & 99.00 & 100.00 & 100.00 \\
+EDGE & 90.67 & 84.00 & 99.33 & 97.47 & 98.63 \\
+CONN & 92.22 & 83.00 & 100.00 & 100.00 & 100.00 \\
+DEG & 98.00 & 81.00 & 100.00 & 98.67 & 100.00 \\
+DFS & 89.33 & 46.00 & 95.67 & 94.33 & 96.33 \\
+PRED & 47.41 & 41.00 & 98.00 & 99.75 & 99.75 \\
+TOPO & 59.00 & 33.00 & 98.33 & 99.50 & 99.25 \\
+CC & 39.30 & 83.00 & 94.67 & 83.30 & 94.74 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+
+\end{document}
