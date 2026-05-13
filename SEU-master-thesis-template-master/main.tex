@@ -181,7 +181,10 @@
 % \bibliography{reference.bib} % 告诉编译器参考文献所在文件
 
 \input{chapters/appendix}           % 附录
-\input{chapters/resume}             % 作者成果页/作者简介
+\ifblindreview
+\else
+    \input{chapters/resume}         % 作者成果页/作者简介
+\fi
 \ifblindreview
 \else
     \input{chapters/Committees_list}    % 毕业/学位论文答辩委员会名单
