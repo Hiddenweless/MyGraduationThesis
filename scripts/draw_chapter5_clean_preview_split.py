@@ -1,17 +1,17 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
-"""Draw Chapter 5 figures and export PDF only.
+"""Draw Chapter 5 figures and export clean English figures.
 
 This version uses MacTeX/XeLaTeX through Matplotlib's PGF backend.
 It avoids Chinese glyph deformation caused by macOS TTC font subsetting
 in normal Matplotlib PDF/SVG export.
 
 Output:
-    scripts/figures/exp_category_accuracy_clean.pdf
-    scripts/figures/exp_complexity_trend_clean.pdf
-    scripts/figures/exp_sample_difficulty_trend_clean.pdf
-    scripts/figures/exp_ablation_clean.pdf
+    scripts/figures/exp_category_accuracy_clean.pdf/.png
+    scripts/figures/exp_complexity_trend_clean.pdf/.png
+    scripts/figures/exp_sample_difficulty_trend_clean.pdf/.png
+    scripts/figures/exp_ablation_clean.pdf/.png
 """
 
 from __future__ import annotations
@@ -32,7 +32,6 @@ OUT_DIR = ROOT / "scripts" / "figures"
 
 # macOS + MacTeX usually works with these.
 # If "Songti SC" fails, try: "PingFang SC", "Heiti SC", "FandolSong-Regular".
-CJK_FONT = "Songti SC"
 LATIN_FONT = "Times New Roman"
 
 COLORS = {
@@ -64,11 +63,8 @@ def setup() -> None:
             "pgf.preamble": "\n".join(
                 [
                     r"\usepackage{fontspec}",
-                    r"\usepackage{xeCJK}",
                     rf"\setmainfont{{{LATIN_FONT}}}",
                     rf"\setsansfont{{{LATIN_FONT}}}",
-                    rf"\setCJKmainfont{{{CJK_FONT}}}",
-                    rf"\setCJKsansfont{{{CJK_FONT}}}",
                     r"\usepackage{amsmath}",
                 ]
             ),
@@ -90,7 +86,7 @@ def polish_axes(ax: plt.Axes, ylim: tuple[float, float]) -> None:
 
     ax.grid(axis="y", color=COLORS["grid"], linewidth=0.8, alpha=0.85)
     ax.set_axisbelow(True)
-    ax.set_ylabel(r"准确率（\%）", color=COLORS["muted"], labelpad=8, fontsize=9.5)
+    ax.set_ylabel(r"Accuracy (\%)", color=COLORS["muted"], labelpad=8, fontsize=9.5)
 
 
 def label_bars(ax: plt.Axes, bars, dy: float = 0.8, size: float = 7.0) -> None:
@@ -122,16 +118,17 @@ def label_points(ax: plt.Axes, x, y, dy: float = 0.35, size: float = 7.5) -> Non
         )
 
 
-def save_pdf(fig: plt.Figure, name: str) -> None:
-    """Save one PDF figure."""
+def save_figure(fig: plt.Figure, name: str) -> None:
+    """Save one figure as both PDF and PNG."""
     OUT_DIR.mkdir(parents=True, exist_ok=True)
     fig.savefig(OUT_DIR / f"{name}.pdf", bbox_inches="tight", pad_inches=0.04)
+    fig.savefig(OUT_DIR / f"{name}.png", bbox_inches="tight", pad_inches=0.04, dpi=220)
     plt.close(fig)
 
 
 def draw_category() -> None:
     """Draw task-category performance comparison."""
-    cats = ["图结构分析", "最短路径", "匹配问题", "流优化", "哈密顿类"]
+    cats = ["Structural\nanalysis", "Shortest\npath", "Matching", "Flow\noptimization", "Hamiltonian\ntasks"]
 
     # 任务归类口径：
     # 图结构分析：GraphArena-CN/CC/GD, NLGraph-CONN/CYC, GraphWiz-CYC/CONN
@@ -164,7 +161,7 @@ def draw_category() -> None:
         x,
         sota,
         width,
-        label="最优基线",
+        label="Best baseline",
         color=COLORS["orange"],
         edgecolor="white",
         linewidth=0.7,
@@ -197,12 +194,12 @@ def draw_category() -> None:
     label_bars(ax, bars_sota, dy=0.75, size=7.0)
     label_bars(ax, bars_plan, dy=0.75, size=7.0)
 
-    save_pdf(fig, "exp_category_accuracy_clean")
+    save_figure(fig, "exp_category_accuracy_clean")
 
 
 def draw_complexity_trend() -> None:
     """Draw task-complexity stratified performance trend."""
-    groups = ["非NP完全", "NP完全"]
+    groups = ["Non-NP-complete", "NP-complete"]
     base_np = np.array([99.20, 92.50])
     plan_np = np.array([99.60, 96.50])
 
@@ -219,7 +216,7 @@ def draw_complexity_trend() -> None:
         markersize=6.2,
         linewidth=2.2,
         color=COLORS["orange"],
-        label="最优基线",
+        label="Best baseline",
     )
     ax.plot(
         x,
@@ -288,12 +285,12 @@ def draw_complexity_trend() -> None:
         color=COLORS["ink"],
     )
 
-    save_pdf(fig, "exp_complexity_trend_clean")
+    save_figure(fig, "exp_complexity_trend_clean")
 
 
 def draw_sample_difficulty_trend() -> None:
     """Draw sample-difficulty stratified performance trend."""
-    scales = ["简单样本", "中等样本", "困难样本"]
+    scales = ["Easy", "Medium", "Hard"]
     base_scale = np.array([97.00, 95.20, 92.40])
     plan_scale = np.array([99.10, 98.00, 96.30])
 
@@ -310,7 +307,7 @@ def draw_sample_difficulty_trend() -> None:
         markersize=6.2,
         linewidth=2.2,
         color=COLORS["orange"],
-        label="最优基线",
+        label="Best baseline",
     )
     ax.plot(
         x,
@@ -340,13 +337,13 @@ def draw_sample_difficulty_trend() -> None:
     label_points(ax, x, base_scale, dy=0.25, size=7.5)
     label_points(ax, x, plan_scale, dy=0.25, size=7.5)
 
-    save_pdf(fig, "exp_sample_difficulty_trend_clean")
+    save_figure(fig, "exp_sample_difficulty_trend_clean")
 
 
 def draw_ablation() -> None:
     """Draw ablation comparison."""
     datasets = ["GraphArena", "NLGraph", "GraphWiz"]
-    methods = ["完整模型", "去除规划", "去除检索", "去除验证"]
+    methods = ["Full model", "No planning", "No retrieval", "No verification"]
 
     values = np.array(
         [
@@ -398,7 +395,7 @@ def draw_ablation() -> None:
     for text in leg.get_texts():
         text.set_color(COLORS["ink"])
 
-    save_pdf(fig, "exp_ablation_clean")
+    save_figure(fig, "exp_ablation_clean")
 
 
 def main() -> None:

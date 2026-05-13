@@ -1,0 +1,419 @@
+%Version 3.1 December 2024
+% Anonymous main manuscript prepared for double-blind review.
+
+\documentclass[pdflatex,sn-mathphys-num]{sn-jnl}
+
+\usepackage{graphicx}
+\usepackage{multirow}
+\usepackage{amsmath,amssymb,amsfonts}
+\usepackage{amsthm}
+\usepackage{mathrsfs}
+\usepackage[title]{appendix}
+\usepackage{xcolor}
+\usepackage{textcomp}
+\usepackage{manyfoot}
+\usepackage{booktabs}
+\usepackage{algorithm}
+\usepackage{algorithmicx}
+\usepackage{algpseudocode}
+\usepackage{array}
+\usepackage{listings}
+\hypersetup{hypertexnames=false}
+
+\theoremstyle{thmstyleone}
+\newtheorem{theorem}{Theorem}
+\newtheorem{proposition}[theorem]{Proposition}
+\theoremstyle{thmstyletwo}
+\newtheorem{example}{Example}
+\newtheorem{remark}{Remark}
+\theoremstyle{thmstylethree}
+\newtheorem{definition}{Definition}
+
+\raggedbottom
+
+\begin{document}
+
+\title[Reliable LLM-Based Graph Reasoning]{Reliable LLM-Based Graph Reasoning via Planning-Guided Retrieval and Execution Feedback}
+
+\author*[1]{\fnm{Anonymous} \sur{Author(s)}}
+\affil*[1]{\orgname{Anonymous Institution}}
+
+\abstract{Graph reasoning with large language models remains unreliable for tasks with strong structural constraints, algorithmic dependencies, and strict output requirements. Existing methods improve either graph understanding or executable solving, but they still struggle with unstable algorithm selection, mismatched API usage, omitted constraints, and answers that run yet solve the wrong problem. We present PlanGraph, a planning-feedback method for reliable language-model-driven graph reasoning. The method converts each task into an explicit pseudocode plan, uses that plan as the intermediate representation for retrieval and code synthesis, and validates candidate programs through executable tests and constraint-aware checks. Structured feedback is then used for local repair, supplementary retrieval, or bounded regeneration. We evaluate PlanGraph on five public graph reasoning benchmarks: GraphArena, NLGraph, GraphWiz, LLM4DyG, and GraphInstruct. PlanGraph achieves the best performance on four of the five benchmarks, reaching an average exact match score of 97.66\%, with the largest gains on high-constraint and combinatorial graph tasks. Additional analyses on retrieval quality, reliability, parameter sensitivity, and ablations show that explicit intermediate planning and execution-grounded correction improve both final accuracy and repeat-run stability, while remaining weaker on tasks with dynamic state evolution and fine-grained temporal constraints.}
+
+\keywords{graph reasoning, large language models, planning, graph algorithms, execution feedback, retrieval augmented generation}
+
+\maketitle
+
+\section{Introduction}\label{sec:introduction}
+
+Graphs are a fundamental abstraction for representing relational data in transportation networks, social systems, biological interactions, knowledge graphs, software dependencies, and many other data-intensive applications. A broad class of graph reasoning tasks requires computing paths, reachability, connectivity, matchings, flows, cliques, vertex covers, tours, temporal relations, or other constrained structures on a given graph. These tasks are attractive testbeds for large language models (LLMs) because they combine natural language understanding, structured data interpretation, algorithm selection, and exact computation. They are also difficult: a correct answer must satisfy topological constraints and output specifications, not merely produce a plausible natural language explanation.
+
+Recent progress in chain-of-thought reasoning, search-augmented prompting, tool use, and program-aided language models has improved LLM performance on many symbolic and computational tasks \cite{wei2022chain,wang2023selfconsistency,yao2023tree,besta2024graph,gao2023pal,yao2023react}. However, graph reasoning exposes a specific reliability gap. Most LLMs process graph data after it has been serialized into text. As the graph grows or as constraints become more complex, important structural relations may be scattered across long sequences, and the model must simultaneously recover the graph, infer the task type, select a graph algorithm, implement it correctly, and format the answer. Errors at any stage can propagate to the final output.
+
+Existing graph reasoning methods mainly improve either graph understanding or executable solving. Structure-aware prompting and instruction tuning improve the model's ability to read graph descriptions \cite{tang2024graphgpt,chai2023graphllm,graphinstruct2024}. Program generation methods translate graph tasks into executable code, often using graph libraries such as NetworkX \cite{hagberg2008networkx,zhang2025gcoder}. These directions are complementary, but each has limitations. Direct prompting and structure-aware prompting still leave exact computation inside the model. Program generation improves precision but can misuse APIs, omit constraints, or produce code that runs while solving the wrong problem. Related coordination-based systems can improve coverage, yet coordination alone does not guarantee a stable intermediate representation or a controlled recovery path after failure \cite{li2024graphteam}.
+
+Reliable LLM-based graph reasoning requires a structured solving pipeline rather than longer unconstrained reasoning chains. We propose PlanGraph, a planning-feedback method that explicitly connects natural language graph tasks to executable graph computation. PlanGraph first parses the task and graph constraints, then generates an algorithm-level pseudocode plan. The plan serves as the intermediate representation for knowledge retrieval and code generation. Candidate programs are executed and checked against task-specific constraints. Failures are converted into structured feedback that can trigger local repair, supplementary retrieval, or bounded regeneration.
+
+The central design choice is to make planning the forward constraint and execution feedback the backward correction signal. Planning reduces the uncertainty of downstream retrieval and coding by exposing the intended algorithmic steps. Execution feedback makes failures observable and recoverable by identifying whether the problem lies in local code, API usage, missing knowledge, or omitted constraints. This organization distinguishes PlanGraph from direct program generation by introducing explicit intermediate structure and bounded recovery around executable feedback.
+
+The contributions of this paper are as follows.
+\begin{itemize}
+\item We formulate LLM-based graph reasoning as a staged process involving task parsing, planning, knowledge retrieval, executable solving, and feedback repair, and identify the role of intermediate plans in reducing error propagation.
+\item We introduce PlanGraph, a planning-feedback method that uses pseudocode plans to guide graph algorithm retrieval and uses execution feedback to repair candidate programs under bounded recovery.
+\item We evaluate PlanGraph on five public graph reasoning benchmarks covering static graph algorithms, combinatorial optimization, instruction-style graph tasks, and dynamic graph reasoning. PlanGraph achieves an average exact match score of 97.66\% and outperforms strong baselines on four of the five benchmarks.
+\item We analyze retrieval quality, reliability, task-category performance, complexity sensitivity, parameter sensitivity, and module ablations, showing that planning, retrieval, and verification contribute complementary gains.
+\end{itemize}
+
+\section{Related Work}\label{sec:related}
+
+\subsection{LLM reasoning, planning, and tool use}
+
+LLM reasoning methods have evolved from single-pass prompting to explicit intermediate reasoning and tool interaction. Chain-of-thought prompting encourages models to generate intermediate steps \cite{wei2022chain}, while self-consistency reduces single-sample variance by aggregating multiple reasoning paths \cite{wang2023selfconsistency}. Least-to-most prompting decomposes complex problems into simpler subproblems \cite{zhou2023least}. Tree-of-Thoughts and Graph-of-Thoughts further frame reasoning as structured search over candidate thoughts \cite{yao2023tree,besta2024graph}. These methods improve general reasoning, but their intermediate states are usually natural language traces rather than executable algorithmic artifacts.
+
+Tool-augmented approaches aim to offload exact computation and external knowledge use. Program-aided language models generate code for symbolic or numerical reasoning \cite{gao2023pal}, while Toolformer, ToolLLM, Gorilla, ReAct, CRITIC, and related methods study API calling, reasoning-action interleaving, or tool-interactive correction \cite{schick2023toolformer,qin2023toolllm,gorilla2024,yao2023react,critic2024}. PlanGraph follows this broader direction but focuses on graph reasoning, where task constraints can often be validated by deterministic graph algorithms or rule checks.
+
+\subsection{LLMs for graph reasoning}
+
+Several benchmarks have been proposed to evaluate LLMs on graph reasoning. NLGraph tests natural language graph algorithm tasks \cite{chen2024nlgraph}. GraphWiz studies instruction-following graph computational problems \cite{gong2024graphwiz}. GraphArena evaluates LLMs across diverse graph computation tasks, including combinatorial problems \cite{tang2025grapharena}. LLM4DyG introduces dynamic graph and temporal constraints \cite{llm4dyg2024}. GraphInstruct focuses on graph understanding and instruction-following capabilities \cite{graphinstruct2024}. These benchmarks show that LLMs can solve simple graph tasks but struggle with strict constraints, larger search spaces, or dynamic relations.
+
+Methodologically, graph reasoning with LLMs has moved from graph serialization and structural prompting toward programmatic solving and coordination-based executable reasoning. GraphGPT and GraphLLM emphasize graph-aware alignment or instruction tuning \cite{tang2024graphgpt,chai2023graphllm}. GCoder improves graph reasoning through program generation and graph-specific coding adaptation \cite{zhang2025gcoder}. GraphTeam studies coordinated graph analysis with multiple interacting reasoning roles \cite{li2024graphteam}. PlanGraph differs by using the pseudocode plan as an explicit intermediate representation that anchors retrieval, code synthesis, verification, and bounded repair.
+
+\subsection{Retrieval and verification for data-intensive reasoning}
+
+Retrieval-augmented generation uses external corpora to improve factuality and task grounding \cite{karpukhin2020dpr,lewis2020rag,izacard2023atlas,gao2024ragsurvey}. In graph reasoning, retrieval is useful not because the answer is stored in a document, but because implementation knowledge about algorithms, APIs, parameters, and return values helps code generation. A raw natural language graph problem may contain irrelevant context, while a pseudocode plan more directly encodes the algorithmic intent. PlanGraph therefore uses plan-guided retrieval and task-constraint re-ranking to align retrieved knowledge with the current solving process.
+
+Verification has also become important for LLM systems. Process supervision, self-refinement, tool-interactive critique, and execution-based repair all show that intermediate outputs can be checked and improved \cite{madaan2023selfrefine,lightman2023processreward,critic2024}. Graph reasoning is well suited to execution-based verification because many constraints, such as path validity, edge weights, matching feasibility, capacity limits, and tour closure, can be checked automatically.
+
+\section{Problem Formulation}\label{sec:problem}
+
+Given a natural language graph reasoning problem $Q$ and an associated graph, the goal is to output an answer $A$ that satisfies both the problem semantics and the required output format. We represent the normalized graph as
+\begin{equation}
+G=(V,E,\mathcal{X}),
+\end{equation}
+where $V$ is the node set, $E$ is the edge set, and $\mathcal{X}$ contains optional node, edge, or graph-level attributes such as weights, directions, capacities, time stamps, labels, and task-specific constraints. For dynamic graphs, $\mathcal{X}$ may include event sequences or time windows. For combinatorial optimization tasks, it may include objective functions and feasibility constraints.
+
+The natural language task is parsed into a structured task specification
+\begin{equation}
+T=(\tau,\mathcal{C},\mathcal{O},\mathcal{F}),
+\end{equation}
+where $\tau$ is the task type, $\mathcal{C}$ is the constraint set, $\mathcal{O}$ is the objective or decision target, and $\mathcal{F}$ is the output format. Examples of $\tau$ include shortest path, maximum flow, matching, topological sorting, traveling salesman, clique search, temporal reachability, and neighborhood query.
+
+We use $P$ for a pseudocode plan, $K$ for retrieved knowledge, $C$ for a candidate program, $F$ for execution feedback, and $A$ for the final answer. The overall graph reasoning process is written as
+\begin{equation}
+A = \mathrm{Solve}(Q,G,T).
+\end{equation}
+
+PlanGraph decomposes this process into conditional stages:
+\begin{align}
+P &= \mathrm{Plan}(T), \nonumber\\
+K &= \mathrm{Retrieve}(P,T), \nonumber\\
+C &= \mathrm{Code}(P,K,T),
+\end{align}
+followed by execution and feedback:
+\begin{align}
+F_t &= \mathrm{Verify}(C_t,\mathcal{D}_{val},P), \nonumber\\
+C_{t+1} &= \mathrm{Repair}(C_t,F_t,P,K).
+\end{align}
+Here $\mathcal{D}_{val}$ denotes validation cases or constraint checkers generated for the task type. If feedback indicates missing knowledge or a planning omission, PlanGraph can trigger supplementary retrieval or bounded regeneration.
+
+This formulation emphasizes two properties. First, graph reasoning is not only text understanding: the answer must satisfy discrete structural constraints. Second, graph reasoning is not only program execution: the task type, graph attributes, constraints, and output requirements must be recovered from natural language. The challenge is to connect semantic understanding and executable graph computation without allowing errors in one stage to silently propagate downstream.
+
+\section{The PlanGraph Framework}\label{sec:framework}
+
+Figure~\ref{fig:framework} gives an overview of PlanGraph. The framework consists of five functional stages: task parsing, pseudocode planning, plan-guided retrieval, executable program generation, and feedback repair. These stages may be implemented as separate modules or coordinated model calls, but the key mechanism is not free-form interaction. Instead, each stage produces a structured artifact that is consumed by the next stage and can be inspected during recovery.
+
+\begin{figure}[t]
+\centering
+\includegraphics[width=\textwidth]{figures/framework.pdf}
+\caption{Overview of the PlanGraph framework. A natural language graph task is parsed into a structured task specification, converted into an algorithm-level plan, grounded with retrieved graph algorithm knowledge, translated into executable code, and corrected through execution feedback.}
+\label{fig:framework}
+\end{figure}
+
+\subsection{Task parsing}
+
+The task parser extracts graph attributes, task goals, constraints, and output requirements from the original input:
+\begin{equation}
+(T,G) \leftarrow \mathrm{ParseTask}(Q).
+\end{equation}
+For inputs that already contain edge lists or adjacency structures, the parser normalizes nodes, edges, directions, and weights. For natural language descriptions, it converts relational statements into a computable graph representation.
+
+The parser records four types of information. The first is graph structure, including whether the graph is directed, weighted, temporal, capacitated, or contains multi-edges. The second is the task objective, such as shortest path, maximum flow, matching, or clique search. The third is the constraint set, such as source and target nodes, fixed start node, tour closure, edge capacity, time window, or no-repetition requirements. The fourth is the expected output format, such as a number, path, Boolean value, node set, or structured list.
+
+\subsection{Pseudocode planning}
+
+The planning stage generates an algorithm-level pseudocode plan:
+\begin{equation}
+P=\{p_1,p_2,\ldots,p_n\}.
+\end{equation}
+Each $p_i$ describes one atomic solving action, such as graph construction, algorithm selection, candidate enumeration, constraint checking, objective calculation, or answer formatting. The plan is not executable code and does not bind the solution to a particular library API. It is an intermediate representation between task semantics and implementation.
+
+PlanGraph imposes three requirements on plans. First, steps should be atomic enough to map to retrieval queries, program blocks, or verification checkpoints. Second, task constraints should be explicit rather than implied by prose. Third, the plan should be tool-agnostic so that API selection can be handled by retrieval and coding. For a shortest path task, a typical plan includes graph construction, source-target parsing, shortest path computation, cost calculation, and output formatting. For a traveling salesman task, it includes weighted graph construction, fixed-start handling, Hamiltonian tour enumeration or search, tour-cost computation, closure validation, and minimum-cost selection.
+
+\subsection{Plan-guided retrieval}
+
+The retrieval module uses the pseudocode plan and task tags as the main query representation:
+\begin{equation}
+K=\mathrm{Retrieve}(P,T).
+\end{equation}
+This differs from direct retrieval based on the raw question. A raw question may include narrative details, graph values, or output wording that are not useful for selecting implementation knowledge. A pseudocode plan highlights the algorithmic intent: for example, ``compute a weighted shortest path from source to target'' or ``enumerate Hamiltonian cycles and minimize total cost.''
+
+Each knowledge item contains a function or algorithm name, description, input and output constraints, examples, tags, and fine-grained snippets. The knowledge base used in our experiments contains 3349 graph algorithm entries covering shortest paths, connectivity, maximum flow, matchings, minimum cuts, clique and independent set problems, vertex cover, traveling salesman variants, Hamiltonian paths, neighborhood queries, subgraph matching, graph diameter, topological sorting, and dynamic graph operations.
+
+\subsection{Executable program generation}
+
+The coding stage receives the task specification, plan, and retrieved knowledge, and generates an executable Python program. The program is required to build the graph from runtime input, call standard libraries and NetworkX when appropriate, perform task-specific constraint checks, and print only the final answer. The generation process is constrained by the plan. For example, if the plan says that edge weights must be used, the program is expected to pass the weight attribute to path or optimization routines. If the task is temporal, the program should filter or update graph state before graph search.
+
+\subsection{Execution verification and feedback repair}
+
+Candidate programs are executed under controlled conditions. Verification checks both executability and semantic constraints. For path tasks, it checks source and target consistency, adjacency validity, and cost agreement. For matching tasks, it checks that each node is matched at most once. For flow tasks, it checks capacity interpretation and source-sink use. For traveling salesman tasks, it checks tour closure, node coverage, edge validity, and total cost. For dynamic graph tasks, it checks time filtering and event ordering.
+
+Feedback is represented as
+\begin{equation}
+F_t=(etype_t,msg_t,case_t,loc_t,rel_t),
+\end{equation}
+where $etype_t$ is the error type, $msg_t$ is a summarized diagnostic message, $case_t$ is the triggering validation case, $loc_t$ is the relevant code or output location, and $rel_t$ links the failure to a plan step or constraint. Local implementation errors trigger code repair. API or knowledge mismatch triggers supplementary retrieval. Repeated constraint omissions may trigger bounded regeneration or re-planning.
+
+The framework does not restart from the raw question after every failure. Instead, it preserves the stable artifacts from upstream stages and repairs only the failing component whenever possible. If a program contains a syntax or local implementation error, the plan and retrieved knowledge can be retained. If the selected API does not match the task, retrieval can be refined using the error message and constraint tags. If the failure indicates that a key structural constraint was omitted from the plan, the framework can regenerate the plan with feedback and continue from the updated intermediate representation.
+
+Algorithm~\ref{alg:plangraph} summarizes the process.
+
+\begin{algorithm}[t]
+\caption{PlanGraph solving process}
+\label{alg:plangraph}
+\begin{algorithmic}[1]
+\Require Natural language graph problem $Q$
+\Ensure Final answer $A$
+\State $(T,G) \gets \mathrm{ParseTask}(Q)$
+\State $P \gets \mathrm{Plan}(T)$
+\State $K \gets \mathrm{Retrieve}(P,T)$
+\State $C \gets \mathrm{GenerateCode}(P,K,T)$
+\For{$t=1$ to $T_{\max}$}
+  \State $F_t \gets \mathrm{Verify}(C,\mathcal{D}_{val},P)$
+  \If{$F_t$ indicates success}
+    \State $R \gets \mathrm{Execute}(C,G)$
+    \State $A \gets \mathrm{FormatAnswer}(R,\mathcal{F})$
+    \State \Return $A$
+  \ElsIf{$F_t$ indicates a local implementation error}
+    \State $C \gets \mathrm{Repair}(C,F_t,P,K)$
+  \ElsIf{$F_t$ indicates knowledge mismatch}
+    \State $K \gets \mathrm{Retrieve}(P,T,F_t)$
+    \State $C \gets \mathrm{Repair}(C,F_t,P,K)$
+  \ElsIf{$F_t$ indicates a planning omission}
+    \State $P \gets \mathrm{Plan}(T,F_t)$
+    \State $K \gets \mathrm{Retrieve}(P,T)$
+    \State $C \gets \mathrm{GenerateCode}(P,K,T)$
+  \EndIf
+  \If{repair budget is exhausted}
+    \State $C \gets \mathrm{GenerateCode}(P,K,T,F_{1:t})$
+  \EndIf
+\EndFor
+\State \Return a formatted answer from the best verified candidate or a structured failure
+\end{algorithmic}
+\end{algorithm}
+
+\section{Experimental Setup}\label{sec:setup}
+
+\subsection{Benchmarks}
+
+We evaluate PlanGraph on five public graph reasoning benchmarks. GraphArena covers graph computation and combinatorial optimization tasks \cite{tang2025grapharena}. NLGraph focuses on natural language graph algorithm reasoning \cite{chen2024nlgraph}. GraphWiz evaluates instruction-following graph computational problems \cite{gong2024graphwiz}. LLM4DyG studies spatial-temporal and dynamic graph reasoning \cite{llm4dyg2024}. GraphInstruct evaluates graph instruction-following and graph understanding \cite{graphinstruct2024}.
+
+The five benchmarks cover static graph algorithms, dynamic graph queries, natural language task descriptions, and structured graph instructions. Except for GraphInstruct, we evaluate on the public task splits without additional task filtering. For GraphInstruct, we report the nine more discriminative tasks used in our evaluation because several basic tasks are close to saturation for strong baselines. All compared methods are evaluated under the same retained task set.
+
+\subsection{Baselines}
+
+We compare PlanGraph with three representative baselines. GPT-4o direct reasoning measures the performance of a strong general-purpose LLM without a specialized graph reasoning framework. GraphTeam represents a coordination-based executable reasoning baseline for graph analysis \cite{li2024graphteam}. GCoder represents program-generation-based graph reasoning \cite{zhang2025gcoder}. For GCoder, we use the better reported result between its Llama3.1-8B and Qwen2.5-Coder variants when both are available.
+
+\subsection{Implementation}
+
+PlanGraph uses GPT-4o as the base LLM in our main experiments. Candidate programs are executed in Python 3.11 with NetworkX. The temperature is set to 0.2, the maximum model output length is 2048 tokens, and each sample keeps one final answer without answer voting. Unless otherwise stated, the retrieval top-$k$ is 3, the maximum number of local repair rounds is 1, the maximum number of regeneration rounds is 1, planning and retrieval attempts are each capped at 2, and the execution timeout is 15 seconds. The random seed is fixed to 42.
+
+\subsection{Metrics}
+
+The main metric is exact match (EM). Given $N$ test samples and $N_c$ completely correct samples,
+\begin{equation}
+\mathrm{EM}=\frac{N_c}{N}\times 100\%.
+\end{equation}
+All failures are included, including execution errors, timeouts, unparsable outputs, and executable programs that produce incorrect answers.
+
+For retrieval quality, we use Hit@$k$ and mean reciprocal rank (MRR):
+\begin{equation}
+\mathrm{Hit@}k=\frac{1}{N}\sum_{i=1}^{N}\mathbb{I}(\mathrm{rank}_i \leq k)\times 100\%,
+\end{equation}
+\begin{equation}
+\mathrm{MRR}=\frac{1}{N}\sum_{i=1}^{N}\frac{1}{\mathrm{rank}_i}\times 100\%.
+\end{equation}
+We also report execution success rate, repair rounds, and parameter sensitivity where relevant.
+
+\section{Results and Analysis}\label{sec:results}
+
+\subsection{Overall performance}
+
+Table~\ref{tab:overall} reports exact match scores across the five benchmarks. PlanGraph achieves the best performance on four of the five benchmarks and reaches an average EM of 97.66\%, improving over the best existing baseline by 2.12 percentage points on average.
+
+\begin{table}[t]
+\caption{Overall exact match comparison on five graph reasoning benchmarks. Scores are percentages.}
+\label{tab:overall}
+\begin{tabular}{@{}lccccc@{}}
+\toprule
+Benchmark & GPT-4o & GraphTeam & GCoder & PlanGraph & Gain \\
+\midrule
+GraphArena & 49.08 & 95.14 & 94.27 & \textbf{97.74} & +2.60 \\
+NLGraph & 51.40 & 97.71 & 96.90 & \textbf{98.72} & +1.01 \\
+GraphWiz & 47.61 & 88.62 & 90.20 & \textbf{97.01} & +6.81 \\
+LLM4DyG & 58.04 & \textbf{96.35} & 93.78 & 96.11 & -0.24 \\
+GraphInstruct & 78.18 & 98.33 & 97.39 & \textbf{98.74} & +0.41 \\
+\midrule
+Average & 56.86 & 95.23 & 94.51 & \textbf{97.66} & +2.12 \\
+\botrule
+\end{tabular}
+\end{table}
+
+The largest improvement appears on GraphWiz, where PlanGraph improves by 6.81 percentage points over the strongest baseline. This pattern is consistent with an advantage on instruction-style tasks where algorithm choice, output contracts, and feasibility constraints interact tightly. PlanGraph also improves on GraphArena and NLGraph, suggesting that the planning-feedback design transfers across both classic graph computation and natural-language graph problems. On LLM4DyG, PlanGraph is slightly below GraphTeam but remains competitive, indicating that temporal state evolution and fine-grained dynamic constraints remain a visible failure boundary for the current method.
+
+\subsection{Reliability and recovery behavior}
+
+Table~\ref{tab:reliability} reports three reliability-oriented indicators on representative benchmarks: exact-match fluctuation across repeated runs, first-pass verification success, and post-repair convergence. The results show that PlanGraph improves final accuracy, reduces output variance, and recovers a large fraction of initially failing candidates within a bounded repair budget.
+
+\begin{table}[t]
+\caption{Reliability observations on representative benchmarks. Scores are percentages except for EM fluctuation, which reports the observed range across repeated runs.}
+\label{tab:reliability}
+\begin{tabular}{@{}lccc@{}}
+\toprule
+Benchmark & EM fluctuation & First-pass success & Post-repair convergence \\
+\midrule
+GraphArena & $\pm0.7$ & 79.6 & 91.4 \\
+NLGraph & \textbf{$\pm0.5$} & \textbf{82.3} & \textbf{93.1} \\
+GraphWiz & $\pm0.9$ & 74.8 & 89.7 \\
+\botrule
+\end{tabular}
+\end{table}
+
+The first-pass success rate is lower on the more constraint-sensitive GraphWiz benchmark, which is consistent with its harder instruction-following requirements. However, the post-repair convergence rate remains high across all three benchmarks. This indicates that the method's main benefit is not only stronger first-pass generation, but also more stable recovery once a candidate fails in a diagnosable way.
+
+\subsection{Task category and complexity}
+
+Figure~\ref{fig:category} compares performance across graph task categories. PlanGraph performs strongly on structural analysis, shortest paths, matching, flow optimization, and Hamiltonian-style tasks. The most visible gain occurs on Hamiltonian-style tasks, where strict constraints such as no repeated nodes, path validity, tour closure, and optimal cost are easy to violate in direct generation.
+
+\begin{figure}[t]
+\centering
+\includegraphics[width=0.95\textwidth]{figures/exp_category_accuracy.pdf}
+\caption{Exact match comparison across graph task categories. PlanGraph is especially effective for high-constraint tasks such as Hamiltonian paths and tours.}
+\label{fig:category}
+\end{figure}
+
+We further compare non-NP-complete and NP-complete task groups, as shown in Fig.~\ref{fig:complexity}. Basic graph queries such as neighbor lookup, connectivity, shortest distance, and graph diameter are nearly saturated for strong methods. In contrast, PlanGraph achieves a larger gain on NP-complete tasks such as maximum independent set, minimum vertex cover, maximum clique, graph edit distance, maximum common subgraph, and traveling salesman. This behavior suggests that the method becomes more valuable as the feasible solution set narrows and correctness depends on maintaining multiple interacting constraints within one solving trace.
+
+\begin{figure}[t]
+\centering
+\includegraphics[width=0.9\textwidth]{figures/exp_complexity_trend.pdf}
+\caption{Performance on non-NP-complete and NP-complete task groups. The relative benefit of PlanGraph is more pronounced on high-complexity graph tasks.}
+\label{fig:complexity}
+\end{figure}
+
+\subsection{Retrieval quality}
+
+Table~\ref{tab:retrieval} compares four retrieval query strategies: raw question text, task type plus keywords, pseudocode plan, and pseudocode plan plus structural constraint tags. Retrieval based on the plan consistently improves Hit@$k$ and MRR, and adding structural tags yields the best result. This indicates that retrieval quality is driven less by surface overlap with the original question and more by whether the intermediate representation makes the intended algorithmic actions and constraints explicit.
+
+\begin{table}[t]
+\caption{Knowledge retrieval quality under different query strategies.}
+\label{tab:retrieval}
+\begin{tabular}{@{}lcccc@{}}
+\toprule
+Query strategy & Hit@1 & Hit@3 & Hit@5 & MRR \\
+\midrule
+Raw question text & 42.6 & 61.8 & 72.9 & 51.4 \\
+Task type + keywords & 68.9 & 84.7 & 92.1 & 76.3 \\
+Pseudocode plan & 76.4 & 90.8 & 96.3 & 83.5 \\
+Plan + structural tags & \textbf{82.1} & \textbf{94.2} & \textbf{98.0} & \textbf{88.4} \\
+\botrule
+\end{tabular}
+\end{table}
+
+\subsection{Ablation study}
+
+Figure~\ref{fig:ablation} shows ablation results. Removing planning causes the largest performance degradation, because retrieval and verification lose a stable intermediate target. Removing execution verification also reduces performance substantially, especially on GraphWiz, where executable programs may run while violating instruction-specific constraints. Removing retrieval gives a smaller but consistent drop, indicating that external implementation knowledge mainly improves robustness to cross-task variation and reduces near-miss errors in API selection.
+
+\begin{figure}[t]
+\centering
+\includegraphics[width=0.92\textwidth]{figures/exp_ablation.pdf}
+\caption{Ablation results on representative benchmarks. Planning, retrieval, and verification all contribute, with planning and execution verification producing the largest effects.}
+\label{fig:ablation}
+\end{figure}
+
+\subsection{Parameter sensitivity}
+
+To study how retrieval budget and repair depth affect performance, we compare six representative parameter settings: $(1,0)$, $(3,1)$, $(5,3)$, $(7,3)$, $(5,4)$, and $(9,4)$. Here $k$ denotes the retrieval top-$k$ and $r$ denotes the maximum number of local repair rounds. The analysis is performed on a representative high-constraint task subset, where the tradeoff between knowledge coverage and bounded correction is most visible.
+
+\begin{table}[t]
+\caption{Parameter sensitivity on representative high-constraint graph tasks. Scores are percentages except for time.}
+\label{tab:param_sensitivity}
+\begin{tabular}{@{}lccccc@{}}
+\toprule
+$(k,r)$ & Overall EM & Hard EM & Exec. success & Avg. repair rounds & Avg. time (s) \\
+\midrule
+$(1,0)$ & 70.00 & 55.00 & 74.20 & \textbf{0.00} & \textbf{13.80} \\
+$(3,1)$ & \textbf{74.17} & 63.75 & 80.80 & 0.36 & 15.20 \\
+$(5,3)$ & 68.75 & 61.25 & 78.30 & 0.92 & 18.40 \\
+$(7,3)$ & 73.75 & \textbf{66.25} & \textbf{81.70} & 0.88 & 17.60 \\
+$(5,4)$ & 71.25 & 65.00 & 80.40 & 1.14 & 20.90 \\
+$(9,4)$ & 71.25 & 63.75 & 79.20 & 1.20 & 19.70 \\
+\botrule
+\end{tabular}
+\end{table}
+
+Table~\ref{tab:param_sensitivity} shows a clear tradeoff. When $r=0$, the method loses recovery ability and hard-sample performance drops sharply. Increasing $k$ and $r$ improves some difficult cases, but larger budgets do not produce monotonic gains and can introduce extra context noise and longer recovery traces. The default setting $(3,1)$ gives the best overall balance between exact match and cost, while $(7,3)$ slightly improves the hardest cases at a higher budget. This pattern supports the design choice of moderate retrieval coverage with bounded repair, rather than aggressive search depth.
+
+\section{Discussion}\label{sec:discussion}
+
+The results suggest that PlanGraph's gains come from the interaction of three mechanisms. Planning reduces ambiguity in task interpretation and turns natural language requirements into algorithm-level actions. Retrieval grounds code generation in graph algorithm knowledge and API behavior. Execution feedback detects failures that are difficult to catch through self-critique alone, including path invalidity, missing weights, capacity misuse, and output-format mismatch. The reliability results further show that these mechanisms improve not only average exact match but also run-to-run stability and bounded recoverability.
+
+The failure patterns are also fairly consistent. One group originates in planning: the system sometimes identifies the right task family but leaves out a decisive constraint, such as tour closure, a fixed start node, a time window, or a capacity condition. A second group originates in retrieval and coding: semantically similar APIs or parameter conventions can lead to programs that run but solve a slightly different problem, for example ignoring edge weights or collapsing shortest-path computation into reachability. A third group originates in verification coverage: a candidate may pass small validation cases yet fail on target graphs with unusual topology or boundary conditions. The last group is representational rather than algorithmic, where the computed result is essentially correct but the final output format does not match the benchmark contract. These error types point to a concrete improvement agenda: finer-grained planning for dynamic constraints, stronger retrieval re-ranking for near-duplicate APIs, and more representative constraint-specific validation cases.
+
+The method is also more expensive than direct generation. For simple graph queries, the full pipeline may be unnecessary. PlanGraph is most useful when graph tasks have strong constraints, nontrivial algorithmic structure, or high error cost. In practical systems, a lightweight router could decide whether to use direct execution, program generation, or full planning-feedback solving based on task complexity.
+
+\section{Conclusion}\label{sec:conclusion}
+
+PlanGraph is a planning-feedback method for reliable LLM-based graph reasoning. Its core idea is to use a pseudocode plan as the intermediate representation that connects task semantics, retrieval, code synthesis, and verification, then use executable feedback for bounded correction when candidate solutions fail. Across five public graph reasoning benchmarks, PlanGraph achieves an average exact match score of 97.66\% and obtains the best result on four benchmarks. The empirical results show that the method is most effective when correctness depends on preserving multiple interacting constraints, and that its gains come not only from higher final accuracy but also from better run-to-run stability and recoverability after diagnosable failures. Dynamic state evolution, temporal constraints, and incomplete validation coverage remain the main failure boundaries of the current design.
+
+\backmatter
+
+\section*{Supplementary information}
+Additional per-task results, prompt templates, and retrieval-query templates can be provided as supplementary material.
+
+\section*{Acknowledgements}
+Omitted from the anonymous manuscript for double-blind review.
+
+\section*{Declarations}
+
+\subsection*{Funding}
+Omitted from the anonymous manuscript for double-blind review.
+
+\subsection*{Conflict of interest}
+The authors declare no competing interests.
+
+\subsection*{Ethics approval and consent to participate}
+Not applicable. This study uses public benchmark datasets and does not involve human participants, human tissue, or animal experiments.
+
+\subsection*{Consent for publication}
+Not applicable.
+
+\subsection*{Data availability}
+The benchmarks used in this study are publicly available from their original sources. Derived evaluation artifacts can be made available upon reasonable request, subject to the licenses of the original datasets.
+
+\subsection*{Code availability}
+The implementation can be made available upon reasonable request. A public release may be provided after acceptance or after completion of the double-blind review process.
+
+\subsection*{Author contribution}
+Omitted from the anonymous manuscript for double-blind review.
+
+\begin{appendices}
+
+\section{Additional per-benchmark results}\label{app:details}
+
+The main paper reports aggregate results to keep the presentation focused. In a full supplementary file, the per-task tables should include GraphArena, NLGraph, GraphWiz, LLM4DyG, and GraphInstruct task-level exact match scores, as well as prompt and retrieval templates.
+
+\end{appendices}
+
+\bibliography{sn-bibliography}
+
+\end{document}

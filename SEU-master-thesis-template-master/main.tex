@@ -91,7 +91,7 @@
 \title
     {\texorpdfstring{基于规划反馈的多智能体\\图推理方法研究}{基于规划反馈的多智能体图推理方法研究}}        % 论文中文标题
     {}         % 论文中文副标题，没有可以空着
-    {Research on Planning-Feedback-Based Multi-Agent Collaborative Solving Methods for Graph Reasoning}  % 论文英文标题
+    {Research on Planning-Feedback-Based Multi-Agent Graph Reasoning Methods}  % 论文英文标题
     {}            % 论文英文副标题，没有可以空着
 
 \spine
@@ -129,8 +129,8 @@
     \reviewer{}{}                % 两位论文评阅人姓名
 \fi
 \department                        % 学院名称
-    {苏州联合研究生院}
-    {Suzhou Joint Graduate School}
+    {\ifblindreview\mbox{}\else 苏州联合研究生院\fi}
+    {\ifblindreview\mbox{}\else Suzhou Joint Graduate School\fi}
 % \seuthesisthanks                % 资助信息，没有可以不写
 %     {本文的部分工作受国家自然基金 No. zxgg666 的支持与帮助，在此表示感谢。}
 
@@ -181,9 +181,9 @@
 % \bibliography{reference.bib} % 告诉编译器参考文献所在文件
 
 \input{chapters/appendix}           % 附录
+\input{chapters/resume}             % 作者成果页/作者简介
 \ifblindreview
 \else
-    \input{chapters/resume}             % 作者简介
     \input{chapters/Committees_list}    % 毕业/学位论文答辩委员会名单
 \fi
 \end{document}

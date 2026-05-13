@@ -741,7 +741,7 @@ s(P,T,k_i)=\lambda_1 s_{\mathrm{sem}}(P,k_i)+\lambda_2 s_{\mathrm{tag}}(T,k_i)+\
 
 在本文方法中，程序生成并不是从原始问题直接到代码的跳跃，而是由规划和知识共同约束。编码智能体根据规划 $P$ 和筛选后的知识集合 $K$ 生成候选程序
 \begin{equation}
-C_0 \leftarrow \mathrm{CodingAgent}(P,K).
+C_0 \leftarrow \mathrm{CodingAgent}(P,K)
 \end{equation}
 候选程序通常采用 Python 实现，并优先调用成熟图计算库完成核心算法。编码阶段需要满足两个要求：一是忠实执行规划步骤，二是尽量使用检索知识中提供的接口和参数说明，减少模型凭经验随意实现造成的错误。
 
