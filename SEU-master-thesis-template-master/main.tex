@@ -70,7 +70,7 @@
 % \usepackage{xeCJK}    % 加载 xeCJK 宏包以支持中文
 \renewcommand{\thefootnote}{\ding{\numexpr171+\value{footnote}}}
 \newif\ifblindreview
-\blindreviewtrue  % 盲审版设为 true；正式版改为 false
+\blindreviewfalse  % 盲审版设为 true；正式版改为 false
 \begin{document}
 
 %% ----------------------------------------------------------------------------
@@ -82,7 +82,7 @@
 \ifblindreview
     \studentid{****}
 \else
-    \studentid{请填写学号}      % 学号要完整，前面的零不能省略
+    \studentid{234804}      % 学号要完整，前面的零不能省略
 \fi
 
 %% ----------------------------------------------------------------------------
@@ -107,8 +107,8 @@
     {\ifblindreview ****\else WANG Teng-long\fi}                  % 作者英文姓名，首字母大写，姓名分开，双字用「-」连接
 
 \advisor
-    {\ifblindreview ****\else 林丽\fi}                % 导师中文姓名
-    {\ifblindreview ****\else LIN Li\fi}        % 导师英文姓名
+    {}                % 导师中文姓名
+    {}        % 导师英文姓名
     {}                     % 导师职称
 %% ----------------------------------------------------------------------------
 %%                              Thesis Defence
@@ -119,7 +119,7 @@
     {Master of Electronic Information}
 \major{人工智能}                 % 一级学科名
 \submajor{图推理与智能计算}             % 二级学科名
-\defenddate{2026年5月}          % 答辩日期 \today
+\defenddate{2026 年 6 月}          % 答辩日期 \today
 \authorizedate{}                  % 授予学位日期，这个档案袋不需要填
 \ifblindreview
     \committeechair{****}
@@ -131,6 +131,10 @@
 \department                        % 学院名称
     {\ifblindreview\mbox{}\else 苏州联合研究生院\fi}
     {\ifblindreview\mbox{}\else Suzhou Joint Graduate School\fi}
+% 固定封面日期，避免编译日期变化影响最终打印版本
+\renewcommand{\todaychn}{2026 年 6 月 3 日}
+\renewcommand{\todayeng}{June 3, 2026}
+
 % \seuthesisthanks                % 资助信息，没有可以不写
 %     {本文的部分工作受国家自然基金 No. zxgg666 的支持与帮助，在此表示感谢。}
 
@@ -141,7 +145,7 @@
 %%                                  Cover
 %% ----------------------------------------------------------------------------
 % ⚠️ 可以在编写论文的时候注释掉封面，加快编译速度
-% % \makebigcover  % 生成A3大封面
+\makebigcover  % 生成A3大封面
 \makecover     % 生成小封面
 	 
 %% ----------------------------------------------------------------------------
@@ -167,10 +171,10 @@
 %% ----------------------------------------------------------------------------
 %%            Acknowledgement, Appendix, Bibliography and Resume
 %% ----------------------------------------------------------------------------
-\ifblindreview
-\else
-    \input{chapters/acknowledgement}    % 致谢
-\fi
+% \ifblindreview
+% \else
+%     \input{chapters/acknowledgement}    % 致谢
+% \fi
 \cleardoublepage
 \phantomsection
 \addcontentsline{toc}{chapter}{\bibname}
@@ -187,6 +191,6 @@
 \fi
 \ifblindreview
 \else
-    \input{chapters/Committees_list}    % 毕业/学位论文答辩委员会名单
+    % \input{chapters/Committees_list}    % 毕业/学位论文答辩委员会名单
 \fi
 \end{document}

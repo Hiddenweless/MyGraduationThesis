@@ -1,0 +1,482 @@
+pages 42
+
+--- slide 1 ---
+基于规划反馈的多智能体
+图推理方法研究
+硕士研究生：王腾龙
+东南大学硕士学位论文答辩报告
+
+--- slide 2 ---
+提纲
+研究目标、研究内容2
+研究背景、研究现状1
+技术路线、系统实现3
+实验验证、总结展望4
+2
+
+--- slide 3 ---
+提纲
+研究目标、研究内容2
+研究背景、研究现状1
+技术路线、系统实现3
+实验验证、总结展望4
+3
+
+--- slide 4 ---
+研究背景
+自回归式的大语言模型
+通过这种自回归生成机制，大语言模型能很好的处理序列化数据，比如文本
+通过逐个生成token来进行序列预测，并采用概率建模动态捕获序列中的语义
+关系，从而有效地处理文本序列
+
+--- slide 5 ---
+研究背景
+图数据结构的特点
+拓扑结构复杂
+难以序列化
+丰富异构性
+图能够表达丰富的结构和关系，用来描述复杂的网络、系统和优化问
+题等
+
+--- slide 6 ---
+研究背景
+图论中的推理决策问题
+示例：旅行商问题（TSP），给定一个包含 n 个城市的图，旅行商需要从
+一个城市出发，经过其他所有城市一次且仅一次，最后回到起始城市，目
+标是求解最短的路径
+物流配送
+芯片制造
+交通规划
+应用场景
+
+--- slide 7 ---
+研究背景
+图节点个数
+幻
+觉
+概
+率
+[1] Tang J, Zhang Q, Li Y, et al. GraphArena: Evaluating and Exploring Large Language Models on Graph Computation . ICLR’25
+大语言模型难以处理图推理任务
+擅长处理线性序列数据的大语言模型，在图推理的任务上表现不佳，幻觉频发
+准确率
+
+--- slide 8 ---
+依赖历史经验库 无需历史经验库
+端到端推理
+Gcoder
+GraphGPT
+GraphTought
+Graphwiz
+PIE
+结构化推理 GraphTeam
+GUNDAM Ours
+研究现状
+基于大语言模型的图推理方法的研究现状
+划分依据1：推理方式 划分依据2：历史经验库的依赖性
+
+--- slide 9 ---
+依赖历史经验库 无需历史经验库
+端到端推理
+Gcoder
+GraphGPT
+GraphTought
+Graphwiz
+PIE
+结构化推理 GraphTeam
+GUNDAM Ours
+基于大语言模型的图推理方法的研究现状
+研究现状
+不足点1：基于端到端推理的方式，在图数据和任务描述的长序列输入下，难以理解图的拓扑与属性关系，
+在复杂图推理问题上经常发生幻觉现象
+
+--- slide 10 ---
+依赖历史经验库 无需历史经验库
+端到端推理
+Gcoder
+GraphGPT
+GraphTought
+Graphwiz
+PIE
+结构化推理 GraphTeam
+GUNDAM Ours
+研究现状
+基于大语言模型的图推理方法的研究现状
+不足点2：基于代码生成的方法往往依赖大量图推理任务的历史经验数据来辅助大语言模型的代码编写，成
+本昂贵且缺乏泛化性
+
+--- slide 11 ---
+提纲
+研究目标、研究内容2
+研究背景、研究现状1
+技术路线、系统实现3
+实验验证、总结展望4
+11
+
+--- slide 12 ---
+研究目标
+12
+总体
+目标
+理论
+目标
+系统
+目标
+构建基于规划反馈的多智能体图推理方法，提升大语言
+模型在复杂图任务中的求解稳定性、正确性与可解释性
+1. 设计面向图推理任务的结构化规划生成方法
+2. 设计规划引导的知识检索与程序生成方法，提升知识
+与步骤匹配一致性
+3. 设计基于执行验证的反馈修复与有界恢复机制
+构建基于规划生成、知识检索、程序执行、验证反馈与
+修复恢复的多智能体图推理系统
+
+--- slide 13 ---
+研究机遇与挑战
+机遇1：引入结构化规划层显式规划以降低复杂图任务的求解难度
+未引入规划 引入结构化规划
+结构化拆解
+
+--- slide 14 ---
+研究机遇与挑战
+机遇1：引入结构化规划层显式规划以降低复杂图任务的求解难度
+挑战1：如何将复杂的自然语言图推理任务结构化解耦和简化？
+引入结构化规划
+设计难点
+难点分析
+
+--- slide 15 ---
+研究机遇与挑战
+不同检索查询方式的检索命中效果对比
+机遇2：显式的规划路径可以作为检索任务相关的外部知识的高效提示
+
+--- slide 16 ---
+研究机遇与挑战
+机遇2：显式的规划路径可以作为检索任务相关的外部知识的高效提示
+图推理任务 显式求解路径
+ 检索查询 外部知识库 候选知识
+挑战2：如何基于规划实现精准的外部知识检索，有效替代历史经验知识库
+
+--- slide 17 ---
+研究机遇与挑战
+机遇3：执行验证反馈可以为程序化图推理提供可观测的修正依据
+
+--- slide 18 ---
+研究机遇与挑战
+机遇3：执行验证反馈可以为程序化图推理提供可观测的修正依据
+挑战2：如何基于规划实现精准的外部知识检索，有效替代历史经验知识库
+
+--- slide 19 ---
+研究内容
+
+--- slide 20 ---
+提纲
+研究目标、研究内容2
+研究背景、研究现状1
+技术路线、系统实现3
+实验验证、总结展望4
+22
+
+--- slide 21 ---
+系统总体设计
+推理 智能体
+Task Description:
+You are required  to solve the 
+<GraphReasoningTask> .
+Your objective is to <Goal> .
+Plea se return your answer in the 
+following format:  
+<AnswerFormat >
+Graph Da ta :
+The graph is a <graph_type>  
+graph. It consists of:                         
+1. Nodes:  <NodeList>
+2. Edges <withweights> : 
+<GraphEdges >+
+In an undirected flig ht network , an 
+edge between two a irports 
+represents a direct flight with the 
+given dista nce (in kilometers). 
+Airports a re labeled as:
+TVU, YCG, …
+Distances between airports (partial 
+list): (TVU, ACC)= 19160,
+Is there a path that visits every 
+airport ex actly once and returns to 
+the starting  airport? If yes, 
+provide the shortest possible route:
+[Airport A, Airport B, ... , Airport A]
+graph = BuildGraph (nodes, edges)
+# Plan step: Compute all possible 
+tours and their lengths
+all_tou rs = 
+GenerateAllPossibleTours (nodes)
+shortest_tour  = null
+min_dista nce = Infinity
+for each tour in all_tou rs:
+    distance =  
+CalculateTourDistance (tour, 
+graph)
+    …… .
+print(solution)
+编码 智能体
+Python代码
+最终 答案
+阶段1：规划模块 阶段3：推理模块
+Shortest Tour: ['TVU', 'YCG',  'SVS', 
+'ZPB', 'YXN', 'YW B', 'BSK',  'ACC', 
+'MSW', 'DPO', 'TVU']
+graph = BuildGraph (nodes, edges)
+# Plan step: Compute all possible 
+tours and their lengths
+all_tou rs = 
+GenerateAllPossibleTours (nodes)
+shortest_tour  = null
+min_dista nce = Infinity
+for each tour in all_tou rs:
+    distance =  
+CalculateTourDistance (tour, 
+graph)
+    …… .
+print(solution)
+1. API N
+
+--- slide 22 ---
+技术路线-规划生成-任务结构化
+23
+子问题1：如何将自然语言图推理任务转化为可检查的求解规划？
+解决思路-结构化解析 + 显式规划生成：
+难点分析：任务结构化（挑战1）
+Task Description:
+You are required  to solve the 
+<GraphReasoningTask> .
+Your objective is to <Goal> .
+Plea se return your answer in the 
+following format:  
+<AnswerFormat >
+Graph Da ta :
+The graph is a <graph_type>  
+graph. It consists of:                         
+1. Nodes:  <NodeList>
+2. Edges <withweights> : 
+<GraphEdges >+
+In an undirected flig ht network , an 
+edge between two a irports 
+represents a direct flight with the 
+given dista nce (in kilometers). 
+Airports a re labeled as:
+TVU, YCG, …
+Distances between airports (partial 
+list): (TVU, ACC)= 19160,
+Is there a path that visits every 
+airport ex actly once and returns to 
+the starting  airport? If yes, 
+provide the shortest possible route:
+[Airport A, Airport B, ... , Airport A]
+graph = BuildGraph (nodes, edges)
+# Plan step: Compute all possible 
+tours and their lengths
+all_tou rs = 
+GenerateAllPossibleTours (nodes)
+shortest_tour  = null
+min_dista nce = Infinity
+for each tour in all_tou rs:
+    distance =  
+CalculateTourDistance (tour, 
+graph)
+    …… .
+print(solution)
+阶段1：规划模块
+初始问题
+ 问题 智能体 规划 伪代码
+图数 据
+任务 描述
+规划 智能体
+• 提取任务类型、图属性、约束集合和输出要求
+• 将复杂任务拆解为图构建、算法选择、约束检查和结果整理等步骤
+• 用规划结果作为后续检索和程序生成的前向约束
+
+--- slide 23 ---
+技术路线-知识检索-规划引导检索
+23
+子问题2：如何利用规划结果精准检索与当前任务相关的外部知识？
+解决思路-结构化解析 + 显式规划生成：
+难点分析：知识检索匹配（挑战2）
+• 以规划步骤而非原始问题构造检索查询。
+• 结合任务类型、图属性和约束标签筛选知识。
+• 在检索质量不足时触发知识片段精炼或补充检索。
+graph = BuildGraph (nodes, edges)
+# Plan step: Compute all possible 
+tours and their lengths
+all_tou rs = 
+GenerateAllPossibleTours (nodes)
+shortest_tour  = null
+min_dista nce = Infinity
+for each tour in all_tou rs:
+    distance =  
+CalculateTourDistance (tour, 
+graph)
+    …… .
+print(solution)
+1. API Name : min_cost_flow
+Description:
+Returns a minimum -cost flow 
+sa tisfying all demands in directed 
+graph G.
+Parameters :
+G (DiGraph ): directed graph with 
+demands, edge costs (weights), 
+capacities.
+Returns:
+flowDict  (dict): A dictionary 
+indica ting flow alloca tion on each 
+edge.
+2. ……阶段2：检索模块
+规划 伪代码
+ 检索 智能体
+Python库
+文档
+ 检索 结果
+向量 数据库
+
+--- slide 24 ---
+技术路线-反馈修复-执行验证闭环
+23
+子问题3：如何利用执行反馈提升程序化图推理稳定性?
+难点分析：程序错误修复（挑战3）
+• 通过验证样例检查程序可执行性、约束满足和输出格式
+• 将运行错误、约束违反和格式异常转化为反馈信号
+• 优先局部修复，必要时补充检索或有界重生成
+推理 智能体
+编码 智能体
+Python代码
+最终 答案
+阶段3：推理模块
+Shortest Tour: ['TVU', 'YCG',  'SVS', 
+'ZPB', 'YXN', 'YW B', 'BSK',  'ACC', 
+'MSW', 'DPO', 'TVU']
+测试 数据
+检索 结果
+ 规划 伪代码
+单元 测试
+修正
+解决思路-结构化解析 + 显式规划生成：
+
+--- slide 25 ---
+技术路线-规划反馈闭环机制
+23
+子问题4：如何将规划、检索、编码和反馈组织为统一闭环？
+解决思路：前向规划约束、反向反馈修正
+难点分析：错误传播与阶段割裂
+
+--- slide 26 ---
+系统调度与实现
+23
+子问题5：如何保证多智能体求解过程可追踪、可恢复和可复现？
+解决思路：主控调度 、 共享黑板 、中间工件管理
+难点分析：多阶段协同稳定性
+
+--- slide 27 ---
+系统演示
+23
+人机交互页面
+ • 采用Vite + React + Tailwind CSS实现
+• 左侧为用户与系统交互区域
+• 展示任务解析、规划、检索、代码生成、执行验证和反馈修复等中间工件
+
+--- slide 28 ---
+提纲
+研究目标、研究内容2
+研究背景、研究现状1
+技术路线、系统实现3
+实验验证、总结展望4
+28
+
+--- slide 29 ---
+35
+实验设置
+实验设置
+
+--- slide 30 ---
+实验结果
+总体性能对比
+• 在五个公开图推理基准中有 四个取得最优结果，相比最佳现有方法平均提升 2.31%
+• 直接推理在各数据集上均明显低于程序生成式方法和多智能体方法
+
+--- slide 31 ---
+实验结果
+不同任务类别性能对比
+• 各类任务上均取得最高精准匹配率，说明方法在不同类型图推理任务上具有较好的泛化能力
+• 哈密顿类任务提升最明显，表明规划与验证机制对 强约束组合任务尤其有效
+
+--- slide 32 ---
+实验结果
+NP 完全任务性能分析
+• 在 NP 完全任务上，本文方法平均精确匹配率达到 96.23%
+• 相比最佳基线 提升 3.36 个百分点，说明本文方法的主要收益集中在 高组合复杂度场景
+
+--- slide 33 ---
+实验结果
+样本难度分层分析
+• 随着图规模增大，各方法性能均出现下降，但本文方法的下降幅度相对更小
+
+--- slide 34 ---
+实验结果
+稳定性与鲁棒性分析
+• 复杂任务首次通过率略低，但修复后收敛率仍达到 89.7% 以上，说明反馈修复机制可以
+在有限轮次内恢复相当一部分失败样例
+• 在三类扰动下，我们的方法仍旧保持最优，说明 系统对输入扰动更稳定
+
+--- slide 35 ---
+实验结果
+检索质量验证
+• 查询方式从Q1至Q4, Hit@1 从 42.6% 提升到 82.1%，MRR 从 51.4% 提升到 88.4%
+• 规划结果不仅能指导代码生成，也能 显著提高外部知识检索的命中率和排序质量
+
+--- slide 36 ---
+实验结果
+参数敏感性分析
+• 默认配置 (k=3, r=1) 在总体 EM、执行成功率和平均耗时之间取得较好平衡
+• 当 r=0 时，困难样本 EM 下降到 55.00%；继续增大检索条数和修复轮数后，性能收益趋
+于饱和，平均耗时明显增加
+
+--- slide 37 ---
+实验结果
+消融实验
+• 移除规划模块后性能下降最明显，显式规划是任务理解、知识检索和程序验证的关键中间层
+• 移除验证模块后 GraphWiz 从 97.01% 降至 90.72%，执行反馈对于错误修复具有直接作用
+
+--- slide 38 ---
+实验结果
+工程开销分析
+• 最短路径任务平均耗时最低，仅 10.8s；旅行商问题平均耗时最高，为 24.3s，简单任务的
+开销低于复杂任务，额外开销保证了复杂推理任务上的可信度，稳定性
+
+--- slide 39 ---
+实验结果
+案例分析
+• 求解可追踪、可解释
+
+--- slide 40 ---
+论文总结
+➢ 提出了面向图推理任务的规划反馈式多智能体协同求解框架 PlanGraph。该框
+架将任务解析、规划生成、知识检索、代码生成与执行验证组织为连续流程，通
+过前向规划约束和反向反馈修正，减少图结构遗漏、算法选择偏差和程序执行错
+误。
+➢ 提出了基于伪代码规划的图算法知识检索与程序化求解方法。利用规划结果显式
+表达任务目标、算法步骤和关键约束，并据此检索相关 API 与实现知识，再生
+成可执行程序完成图推理求解。
+➢ 在 GraphArena、NLGraph、GraphWiz、LLM4DyG 和 GraphInstruct 五个
+公开图推理基准上进行实验验证。PlanGraph 平均精确匹配率达到 96.89%，
+较最佳现有方法平均提升 2.31 个百分点，证明了本文方法的有效性和稳定性。
+
+--- slide 41 ---
+论文成果
+论文相关成果
+[1] 王腾龙，等. 2026. Reliable LLM-Based Graph Reasoning via Planning-
+Guided Retrieval and Execution Feedback. Data Science and Engineering（DSE）.
+（JCR Q1，学生一作， 在投）
+
+--- slide 42 ---
+感谢各位评委老师！
+请大家提出宝贵意见！

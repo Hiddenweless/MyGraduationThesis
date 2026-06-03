@@ -929,7 +929,7 @@
 \newcommand\makecover {
     \makechinesecover
     \makeenglishcover
-    \seudeclare
+    % \seudeclare
 }
 
 %% ----------------------------------------------------------------------------

@@ -1,0 +1,18 @@
+task mode: create
+primary deck-profile: engineering-platform
+required proof objects:
+- Graph reasoning problem framing and pain points
+- PlanGraph workflow map
+- Multi-agent architecture map
+- Metric evidence across five public benchmarks
+- Ablation, robustness, and case proof slides
+source/asset requirements:
+- Use thesis figures under SEU-master-thesis-template-master/figures/paper
+- Reuse opening-defense narrative structure only as skeleton
+- Use final thesis experiment results, not proposal-stage expected outcomes
+known missing inputs:
+- PlanGraph Chat browser screenshot is not available locally; deck includes a clearly marked screenshot placeholder.
+profile-specific QA gates:
+- Technical labels must remain legible after rendering.
+- Workflow direction must be visually clear.
+- Experimental claims must be tied to tables or charts.
