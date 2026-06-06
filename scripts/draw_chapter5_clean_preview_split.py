@@ -97,7 +97,7 @@ def polish_axes(ax: plt.Axes, ylim: tuple[float, float]) -> None:
         "精确匹配率（%）",
         color=COLORS["ink"],
         labelpad=8,
-        fontsize=9.5,
+        fontsize=10,
     )
 
 
@@ -210,7 +210,7 @@ def draw_category() -> None:
         loc="upper center",
         bbox_to_anchor=(0.5, 1.09),
         frameon=False,
-        fontsize=9.5,
+        fontsize=10,
     )
     for text in leg.get_texts():
         text.set_color(COLORS["ink"])
@@ -264,7 +264,7 @@ def draw_complexity_trend() -> None:
         loc="upper center",
         bbox_to_anchor=(0.5, 1.10),
         frameon=False,
-        fontsize=9.5,
+        fontsize=10,
     )
     for text in leg.get_texts():
         text.set_color(COLORS["ink"])
@@ -351,7 +351,7 @@ def draw_sample_difficulty_trend() -> None:
         loc="upper center",
         bbox_to_anchor=(0.5, 1.10),
         frameon=False,
-        fontsize=9.5,
+        fontsize=10,
     )
     for text in leg.get_texts():
         text.set_color(COLORS["ink"])
@@ -412,7 +412,7 @@ def draw_ablation() -> None:
         loc="upper center",
         bbox_to_anchor=(0.5, 1.09),
         frameon=False,
-        fontsize=9.5,
+        fontsize=10,
     )
     for text in leg.get_texts():
         text.set_color(COLORS["ink"])
