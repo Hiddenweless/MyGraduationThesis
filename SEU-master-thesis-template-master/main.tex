@@ -76,11 +76,11 @@
 %% ----------------------------------------------------------------------------
 %%                                 Meta Data
 %% ----------------------------------------------------------------------------
-\categorynumber{TN92} %《中国图书资料分类法》分类法
-\UDC{004.8}              %《国际十进分类法UDC》的类号
+\categorynumber{TP391.4} %《中国图书资料分类法》分类法
+\UDC{004.9}              %《国际十进分类法UDC》的类号
 \secretlevel{公开}        % 学位论文密级分为"公开"、"内部"、"秘密"和"机密"四种
 \ifblindreview
-    \studentid{****}
+    \studentid{\mbox{}}
 \else
     \studentid{234804}      % 学号要完整，前面的零不能省略
 \fi
@@ -103,13 +103,17 @@
 %%                             Author and Advidor
 %% ----------------------------------------------------------------------------
 \author
-    {\ifblindreview ****\else 王腾龙\fi}                        % 作者中文姓名
-    {\ifblindreview ****\else WANG Teng-long\fi}                  % 作者英文姓名，首字母大写，姓名分开，双字用「-」连接
+    {\ifblindreview\mbox{}\else 王腾龙\fi}                        % 作者中文姓名
+    {\ifblindreview\mbox{}\else WANG Teng-long\fi}                  % 作者英文姓名，首字母大写，姓名分开，双字用「-」连接
 
 \advisor
     {林丽}                % 导师中文姓名
     {LIN Li}        % 导师英文姓名
     {讲师}                     % 导师职称
+\coadvisor
+    {浦春林 高工}                % 校外导师中文姓名
+    {PU Chun-lin}        % 校外导师英文姓名
+    {Senior Engineer}                     % 校外导师英文职称
 %% ----------------------------------------------------------------------------
 %%                              Thesis Defence
 %% ----------------------------------------------------------------------------
@@ -119,10 +123,10 @@
     {Master of Electronic Information}
 \major{人工智能}                 % 一级学科名
 \submajor{图推理与智能计算}             % 二级学科名
-\defenddate{2026 年 6 月}          % 答辩日期 \today
+\defenddate{2026 年 6 月 8 日}          % 答辩日期 \today
 \authorizedate{}                  % 授予学位日期，这个档案袋不需要填
 \ifblindreview
-    \committeechair{****}
+    \committeechair{\mbox{}}
     \reviewer{盲审}{盲审}
 \else
     \committeechair{李传佑}               % 答辩委员会主席姓名
@@ -132,8 +136,8 @@
     {\ifblindreview\mbox{}\else 苏州联合研究生院\fi}
     {\ifblindreview\mbox{}\else Suzhou Joint Graduate School\fi}
 % 固定封面日期，避免编译日期变化影响最终打印版本
-\renewcommand{\todaychn}{2026 年 6 月 4 日}
-\renewcommand{\todayeng}{June 4, 2026}
+\renewcommand{\todaychn}{2026 年 6 月 8 日}
+\renewcommand{\todayeng}{June 8, 2026}
 
 % \seuthesisthanks                % 资助信息，没有可以不写
 %     {本文的部分工作受国家自然基金 No. zxgg666 的支持与帮助，在此表示感谢。}
@@ -184,7 +188,7 @@
 %% 下面一句只是用于提示 TexPad 参考文献位置，正式生成时一定要删除
 % \bibliography{reference.bib} % 告诉编译器参考文献所在文件
 
-\input{chapters/appendix}           % 附录
+% \input{chapters/appendix}           % 附录（详细实验结果已并入正文第3、4章）
 \ifblindreview
 \else
     \input{chapters/resume}         % 作者成果页/作者简介

@@ -5,6 +5,8 @@ set -euo pipefail
 ROOT_DIR="$(cd "$(dirname "$0")" && pwd)"
 cd "$ROOT_DIR"
 REPO_ROOT="$(git rev-parse --show-toplevel)"
+THESIS_REL="${ROOT_DIR#${REPO_ROOT}/}"
+CURRENT_BRANCH="$(git -C "$REPO_ROOT" branch --show-current)"
 
 MAIN_FILE="main"
 
@@ -55,17 +57,30 @@ xelatex -interaction=nonstopmode "${MAIN_FILE}.tex"
 echo "[5/5] 第三次 xelatex..."
 xelatex -interaction=nonstopmode "${MAIN_FILE}.tex"
 
-echo "[6/6] 同步到远程仓库..."
+FINAL_PDF_PATH="${REPO_ROOT}/thesis_final.pdf"
+if [[ -f "${FINAL_PDF_PATH}" ]]; then
+  echo "[6/7] 更新仓库根目录 thesis_final.pdf..."
+  cp "${ROOT_DIR}/${MAIN_FILE}.pdf" "${FINAL_PDF_PATH}"
+fi
+
+echo "[7/7] 同步到远程仓库..."
 cd "$REPO_ROOT"
-git add -A
+if [[ -f "${FINAL_PDF_PATH}" ]]; then
+  git add -A -- "${THESIS_REL}" "thesis_final.pdf"
+else
+  git add -A -- "${THESIS_REL}"
+fi
 if ! git diff --cached --quiet; then
   git commit -m "Auto-sync thesis after successful build"
 else
   echo "没有检测到新的改动，跳过提交。"
 fi
-git push origin main
+git push origin "${CURRENT_BRANCH}"
 
 echo
 echo "编译完成: ${ROOT_DIR}/${MAIN_FILE}.pdf"
-echo "已同步到远程仓库: origin/main"
+if [[ -f "${FINAL_PDF_PATH}" ]]; then
+  echo "终版 PDF 已同步: ${FINAL_PDF_PATH}"
+fi
+echo "已同步到远程仓库: origin/${CURRENT_BRANCH}"
 echo "建议送审前人工检查：正文引用、参考文献编号、目录页码、图表编号。"

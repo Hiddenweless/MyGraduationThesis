@@ -576,8 +576,8 @@
                     \makebox[2.5cm][c]{\xiaoerhao\heiti\@advisorname}
                     \makebox[2cm][r]{}}
                 } \\
-                &
                 \ifcoadvisor
+                & 
                 \underline{\makebox[6cm][s]{
                     \hspace*{1.7cm}
                     \makebox[2.5cm][c]{\xiaoerhao\heiti\@coadvisorname}
@@ -747,8 +747,8 @@
                 }
             }
             \\
-            &
             \ifcoadvisor
+            & 
             \underline{
                 \makebox[6cm][s] {
                     \hspace*{1.7cm}
@@ -843,8 +843,8 @@
                     }
                 }
                 \\
-                &
                 \ifcoadvisor
+                & 
                 \underline{
                     \makebox[6cm][c] {
                         \xiaoerhao\songti\textbf{\@coadvisorname}
@@ -929,7 +929,7 @@
 \newcommand\makecover {
     \makechinesecover
     \makeenglishcover
-    % \seudeclare
+    \seudeclare
 }
 
 %% ----------------------------------------------------------------------------
