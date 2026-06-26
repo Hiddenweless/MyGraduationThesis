@@ -3,18 +3,18 @@
 
 \section{研究背景与意义}
 
-图结构可以刻画实体之间的连接关系及其相互作用，因此常用于交通网络、社交网络、生物分子网络、知识图谱和软件依赖分析等场景。对图结构进行推理和计算，是图论、数据挖掘与人工智能研究中的基础问题。最短路径、连通性判定、匹配、最大团、最小顶点覆盖以及旅行商问题等任务，既有清晰的图论定义和算法基础，也对应路径规划、网络分析、资源调度和组合优化等实际应用需求\cite{cormen2009clrs,diestel2017graph,korte2018combinatorial}。
+图结构可以刻画实体之间的连接关系及其相互作用，因此常用于交通网络、社交网络、生物分子网络、知识图谱和软件依赖分析等场景。对图结构进行推理和计算，是图论、数据挖掘与人工智能研究中的基础问题。最短路径和连通性判定具有成熟的图算法基础\cite{cormen2009clrs}，匹配、最大团、最小顶点覆盖和旅行商问题等任务则是组合优化中的典型问题\cite{korte2018combinatorial}；这些任务均具有清晰的图论定义\cite{diestel2017graph}，并对应路径规划、网络分析和资源调度等实际需求。
 
-近年来，大语言模型在语义理解、步骤化推理和程序生成方面表现出较强能力。Transformer 架构、少样本学习、指令微调以及开源基础模型的发展，使语言模型逐渐从文本建模工具扩展为能够参与复杂任务求解的通用模型\cite{vaswani2017attention,brown2020language,ouyang2022instructgpt,touvron2023llama,bubeck2023sparks}。在链式思维提示、自一致性采样、树状思维等方法的推动下，语言模型在数学推理、代码生成和工具调用任务中已经展现出较好的问题分解与执行辅助能力\cite{wei2022chain,wang2023selfconsistency,yao2023tree,besta2024graph,gao2023pal}。基于这些能力，研究者开始将大语言模型用于图推理任务，尝试让模型根据自然语言问题理解图结构、选择合适算法，并生成相应的求解过程或程序。
+近年来，大语言模型在语义理解、步骤化推理和程序生成方面表现出较强能力。Transformer 架构\cite{vaswani2017attention}、少样本学习\cite{brown2020language}、指令微调\cite{ouyang2022instructgpt}以及 LLaMA 等开源基础模型\cite{touvron2023llama}的发展，使语言模型逐渐从文本建模工具扩展为能够参与复杂任务求解的通用模型\cite{bubeck2023sparks}。在 Chain-of-Thought\cite{wei2022chain}、Self-Consistency\cite{wang2023selfconsistency}、Tree-of-Thoughts\cite{yao2023tree}、Graph-of-Thoughts\cite{besta2024graph}和 PAL\cite{gao2023pal}等方法的推动下，语言模型在数学推理、代码生成和工具调用任务中已经展现出较好的问题分解与执行辅助能力。基于这些能力，研究者开始将大语言模型用于图推理任务，尝试让模型根据自然语言问题理解图结构、选择合适算法，并生成相应的求解过程或程序。
 
 \begin{figure}[htbp]
     \centering
     \includegraphics[width=0.9\textwidth]{figures/paper/intro.pdf}
-    \caption{图推理任务整体示意图}
+    \caption{大语言模型辅助图推理任务求解示意图}
     \label{fig:intro_task_overview}
 \end{figure}
 
-图\ref{fig:intro_task_overview}给出了本文所研究图推理任务的基本流程：系统首先接收自然语言形式的任务描述，再围绕给定图结构执行最短路径、最大团、旅行商等不同类型的图推理任务，最终生成目标答案。与传统纯文本问答不同，这类任务的关键在于如何把自然语言目标准确映射到可执行的图算法流程上。
+图\ref{fig:intro_task_overview}给出了大语言模型辅助图推理任务求解的基本过程。交通网络、社交网络和知识图谱等图数据上的最短路径、连通性等任务，需要将问题目标与合适的图算法建立对应关系。当任务以自然语言表述时，语义目标与可执行图算法之间存在求解鸿沟。大语言模型可以结合算法库和外部工具理解任务、调用图算法并组织最终结果，为连接自然语言问题与结构化图计算提供了一条可行路径。
 
 图推理与一般文本推理存在本质差异。图结构强调节点、边及其拓扑关系，输入信息通常由离散的结构对象组成，而非自然语言中的线性语义序列。为了适配语言模型，大多数现有方法需要将图序列化为文本，再让模型直接进行端到端推理或生成代码。随着图规模增大、边属性变复杂以及约束条件增多，这种串行化表示会显著增加模型理解负担，导致拓扑关系遗漏、约束违反和答案幻觉等问题。
 
@@ -29,23 +29,23 @@
 
 \subsection{大语言模型推理方法研究}
 
-大语言模型推理能力的提升，早期主要依赖提示形式设计和解码策略改进。Chain-of-Thought 通过让模型写出中间推理步骤，改善了其在算术推理和逻辑推理任务中的表现\cite{wei2022chain}。Scratchpad、过程验证器以及 Program of Thoughts 等研究进一步说明，将中间计算过程、程序执行过程或结果检查过程显式呈现出来，可以减少复杂推理中不容易被直接观察到的错误\cite{nye2021scratchpads,cobbe2021verifiers,chen2023pot}。Self-Consistency 不再只依赖单条推理路径，而是对多条候选推理结果进行聚合，从而降低偶然推理错误对最终答案的影响\cite{wang2023selfconsistency}。Least-to-Most Prompting 将原问题拆分为一组较小的子问题，并按照由易到难的顺序逐步求解\cite{zhou2023least}。Tree-of-Thoughts 和 Graph-of-Thoughts 则进一步把推理过程组织为可分支、可搜索的结构，而不是固定的一条线性链路\cite{yao2023tree,besta2024graph}。此外，Zero-Shot CoT、Selection-Inference、ReAct、Self-Refine、Reflexion、CRITIC、语言智能体树搜索以及过程验证类方法，分别从零样本推理、选择与推断分离、推理和行动结合、自反馈修正、工具交互纠错、搜索式行动规划以及过程监督等角度扩展了推理增强研究的范围\cite{kojima2022zeroshot,creswell2023selection,yao2023react,madaan2023selfrefine,shinn2023reflexion,critic2024,zhou2024lats,lightman2023processreward}。这些工作表明，在复杂任务中显式组织中间步骤，往往比直接生成最终答案更稳定。
+大语言模型推理能力的提升，早期主要依赖提示形式设计和解码策略改进。Chain-of-Thought 通过让模型写出中间推理步骤，改善了其在算术推理和逻辑推理任务中的表现\cite{wei2022chain}。Scratchpad\cite{nye2021scratchpads}、过程验证器\cite{cobbe2021verifiers}以及 Program of Thoughts\cite{chen2023pot}进一步说明，将中间计算过程、程序执行过程或结果检查过程显式呈现出来，可以减少复杂推理中不容易被直接观察到的错误。Self-Consistency 不再只依赖单条推理路径，而是对多条候选推理结果进行聚合，从而降低偶然推理错误对最终答案的影响\cite{wang2023selfconsistency}。Least-to-Most Prompting 将原问题拆分为一组较小的子问题，并按照由易到难的顺序逐步求解\cite{zhou2023least}。Tree-of-Thoughts\cite{yao2023tree}和 Graph-of-Thoughts\cite{besta2024graph}则进一步把推理过程组织为可分支、可搜索的结构，而不是固定的一条线性链路。此外，Zero-Shot CoT\cite{kojima2022zeroshot}、Selection-Inference\cite{creswell2023selection}、ReAct\cite{yao2023react}、Self-Refine\cite{madaan2023selfrefine}、Reflexion\cite{shinn2023reflexion}、CRITIC\cite{critic2024}、语言智能体树搜索\cite{zhou2024lats}以及过程监督方法\cite{lightman2023processreward}，分别从零样本推理、选择与推断分离、推理和行动结合、自反馈修正、工具交互纠错、搜索式行动规划以及过程监督等角度扩展了推理增强研究的范围。这些工作表明，在复杂任务中显式组织中间步骤，往往比直接生成最终答案更稳定。
 
-除文本提示层面的改进外，另一条研究路线是将语言模型接入外部工具、执行环境或程序系统。PAL 将自然语言问题转化为程序生成与执行问题，使模型负责生成求解逻辑，而把具体计算交给解释器完成\cite{gao2023pal}。Toolformer 和 ToolLLM 更强调模型对外部 API 的识别、选择和调用能力，使语言模型可以在生成过程中主动利用外部功能\cite{schick2023toolformer,qin2023toolllm}。Gorilla 和 AlphaCode 则分别从 API 对齐和复杂程序生成角度说明，语言模型在外部环境支持下可以完成更复杂的任务\cite{gorilla2024,liang2022alphacode}。这类研究的共同特点是：模型不再被要求独立完成所有计算细节，而是通过生成程序、调用工具或访问外部知识，将部分任务交给更适合的执行模块完成。
+除文本提示层面的改进外，另一条研究路线是将语言模型接入外部工具、执行环境或程序系统。PAL 将自然语言问题转化为程序生成与执行问题，使模型负责生成求解逻辑，而把具体计算交给解释器完成\cite{gao2023pal}。Toolformer\cite{schick2023toolformer}和 ToolLLM\cite{qin2023toolllm}更强调模型对外部 API 的识别、选择和调用能力，使语言模型可以在生成过程中主动利用外部功能。Gorilla\cite{gorilla2024}和 AlphaCode\cite{liang2022alphacode}则分别从 API 对齐和复杂程序生成角度说明，语言模型在外部环境支持下可以完成更复杂的任务。这类研究的共同特点是：模型不再被要求独立完成所有计算细节，而是通过生成程序、调用工具或访问外部知识，将部分任务交给更适合的执行模块完成。
 
-从技术路线来看，大语言模型的推理增强大致经历了提示增强、工具增强以及过程控制与系统协同三个阶段。早期方法主要通过提示设计和采样策略，引导模型展开中间推理过程；随后，研究重点逐渐转向程序执行、知识检索和 API 调用，使精确计算和外部知识能够进入模型求解链路；近期工作则更关注推理过程是否可记录、可检查和可回退，尝试把规划、行动、反馈与修复组织成一个连续的求解过程\cite{wei2022chain,wang2023selfconsistency,gao2023pal,schick2023toolformer,qin2023toolllm,yao2023react,critic2024}。因此，复杂任务能力的提升并不只取决于模型生成更长的推理文本，还取决于模型能否在不同阶段完成合适的子任务，并与外部执行能力形成稳定配合。
+从技术路线来看，大语言模型的推理增强大致经历了提示增强、工具增强以及过程控制与系统协同三个阶段。早期的 Chain-of-Thought\cite{wei2022chain}和 Self-Consistency\cite{wang2023selfconsistency}主要通过提示设计和采样策略引导模型展开中间推理过程；随后，PAL\cite{gao2023pal}、Toolformer\cite{schick2023toolformer}和 ToolLLM\cite{qin2023toolllm}等方法将程序执行、知识检索和 API 调用引入模型求解链路；近期的 ReAct\cite{yao2023react}和 CRITIC\cite{critic2024}则更关注推理过程能否结合行动反馈进行检查和修正。因此，复杂任务能力的提升并不只取决于模型生成更长的推理文本，还取决于模型能否在不同阶段完成合适的子任务，并与外部执行能力形成稳定配合。
 
-需要注意的是，上述推理增强方法多数面向自然语言问答、数学推理或通用代码生成任务。此类任务的输入通常可以被处理为线性文本，输出形式也多为答案、程序或行动序列。图推理任务则不同，其输入包含节点、边、属性和约束条件，求解过程还需要满足明确的拓扑关系。若仅扩展一般思维链，模型可能在中间步骤中遗漏节点关系、边属性或约束条件；若只依赖工具调用，也可能出现检索到的知识、选择的算法和最终程序实现不一致的问题。因此，已有推理增强研究虽然为本文提供了分阶段求解、工具调用和过程验证方面的方法基础，但在高约束图推理场景中，还需要进一步引入面向图结构的中间表示和可执行验证机制\cite{besta2024graph,gao2023pal,yao2023react,lightman2023processreward}。
+需要注意的是，上述推理增强方法多数面向自然语言问答、数学推理或通用代码生成任务。此类任务的输入通常可以被处理为线性文本，输出形式也多为答案、程序或行动序列。图推理任务则不同，其输入包含节点、边、属性和约束条件，求解过程还需要满足明确的拓扑关系。若仅扩展 Graph-of-Thoughts\cite{besta2024graph}等一般思维组织方式，模型仍可能在中间步骤中遗漏节点关系、边属性或约束条件；PAL\cite{gao2023pal}和 ReAct\cite{yao2023react}提供了程序执行与工具行动基础，过程监督方法\cite{lightman2023processreward}则提供了中间结果检查思路，但在高约束图推理场景中还需要进一步引入面向图结构的中间表示和可执行验证机制。
 
 \subsection{面向图推理任务的大语言模型研究}
 
-针对图推理问题，近年来出现了一批专门的评测基准。NLGraph 关注自然语言条件下的经典图算法任务\cite{chen2024nlgraph}，GraphWiz 面向指令式图算法推理\cite{gong2024graphwiz}，GraphArena、GraphInstruct 与 LLM4DyG 则分别从经典图问题、指令跟随场景和动态图场景评估模型能力\cite{tang2025grapharena,graphinstruct2024,llm4dyg2024}。相关方法研究也开始从图理解对齐、图序列化表达和组合优化思维生成等角度系统推动该方向发展\cite{fatemi2024talk,zhang2023graphmeetsllms,jin2024llmgraphs,gundam2024,graphthought2025,pseudocode2025}。这些基准与方法研究普遍表明，尽管大模型在小规模样例和规则明确的问题上能够取得一定效果，但在结构复杂、约束严格或需要组合优化的场景下，其性能仍显著受限。
+针对图推理问题，近年来出现了一批专门的评测基准。NLGraph\cite{chen2024nlgraph}关注自然语言条件下的经典图算法任务，GraphWiz\cite{gong2024graphwiz}面向指令式图算法推理，GraphArena\cite{tang2025grapharena}、GraphInstruct\cite{graphinstruct2024}与 LLM4DyG\cite{llm4dyg2024}则分别从经典图问题、指令跟随场景和动态图场景评估模型能力。相关研究包括面向图序列化表达的 Talk Like a Graph\cite{fatemi2024talk}、讨论图与大语言模型结合方式的 Graph Meets LLMs\cite{zhang2023graphmeetsllms}、系统梳理图上大语言模型研究的综述\cite{jin2024llmgraphs}、图理解对齐方法 GUNDAM\cite{gundam2024}、组合优化思维生成方法 GraphThought\cite{graphthought2025}以及伪代码注入方法\cite{pseudocode2025}。这些基准与方法研究普遍表明，尽管大模型在小规模样例和规则明确的问题上能够取得一定效果，但在结构复杂、约束严格或需要组合优化的场景下，其性能仍显著受限。
 
-现有图推理增强研究可以概括为三种思路。第一种思路侧重于增强模型的图结构感知能力，通常通过任务改写、结构化提示或面向图任务的指令微调，使模型更容易识别节点、边及其拓扑关系\cite{tang2024graphgpt,chai2023graphllm}。第二种思路侧重于程序化求解，即把自然语言中的图任务转换为 Python 程序，再借助 NetworkX 等图计算库完成具体计算\cite{hagberg2008networkx,zhang2025gcoder}。第三种思路则引入多智能体协作机制，让不同角色分别负责规划、检索、代码生成、评审和修复等环节，以减少单一模型一次性完成全部步骤时产生的错误\cite{li2024graphteam}。
+现有图推理增强研究可以概括为三种思路。第一种思路侧重于增强模型的图结构感知能力，代表方法包括 GraphGPT\cite{tang2024graphgpt}和 GraphLLM\cite{chai2023graphllm}，通常通过任务改写、结构化提示或面向图任务的指令微调，使模型更容易识别节点、边及其拓扑关系。第二种思路侧重于程序化求解，GCoder\cite{zhang2025gcoder}将自然语言图任务转换为 Python 程序，再借助 NetworkX\cite{hagberg2008networkx}等图计算库完成具体计算。第三种思路以 GraphTeam\cite{li2024graphteam}为代表，引入多智能体协作机制，让不同角色分别负责规划、检索、代码生成、评审和修复等环节，以减少单一模型一次性完成全部步骤时产生的错误。
 
-不同图推理基准测试集在能力考察上并不完全相同。NLGraph 主要考察自然语言描述到经典图算法之间的对应关系，重点在于模型能否从文本中识别任务语义并选择合适的图算法。GraphWiz 和 GraphInstruct 更关注指令跟随能力、推理步骤的一致性以及最终输出格式是否符合要求。GraphArena 的任务范围更广，也包含更多组合优化类问题；LLM4DyG 则进一步引入时间演化和动态图约束，用于考察模型对动态关系的处理能力\cite{chen2024nlgraph,gong2024graphwiz,tang2025grapharena,graphinstruct2024,llm4dyg2024}。近期围绕图推理泛化、复杂图理解、大规模图数据编码和强化学习式图推理的研究也表明，图推理评测不能只看最终答案是否正确，还需要同时关注输入解析、图构建、算法选择、代码执行和结果验证等环节\cite{zhang2024memorization,yuan2024gracore,wu2025grapheval36k,guo2025g1}。因此，图推理更接近一个由多个子过程共同组成的系统性任务，而不是单一的文本推理能力测试。
+不同图推理基准测试集在能力考察上并不完全相同。NLGraph\cite{chen2024nlgraph}主要考察自然语言描述到经典图算法之间的对应关系，重点在于模型能否从文本中识别任务语义并选择合适的图算法。GraphWiz\cite{gong2024graphwiz}和 GraphInstruct\cite{graphinstruct2024}更关注指令跟随能力、推理步骤的一致性以及最终输出格式是否符合要求。GraphArena\cite{tang2025grapharena}的任务范围更广，也包含更多组合优化类问题；LLM4DyG\cite{llm4dyg2024}则进一步引入时间演化和动态图约束，用于考察模型对动态关系的处理能力。近期的图推理泛化研究\cite{zhang2024memorization}、复杂图理解基准 GraCoRe\cite{yuan2024gracore}、大规模图推理基准 GraphEval36K\cite{wu2025grapheval36k}和强化学习式图推理方法 G1\cite{guo2025g1}也表明，图推理评测不能只看最终答案是否正确，还需要同时关注输入解析、图构建、算法选择、代码执行和结果验证等环节。因此，图推理更接近一个由多个子过程共同组成的系统性任务，而不是单一的文本推理能力测试。
 
-从已有工作的演进过程看，图推理增强方法已经逐渐形成结构感知增强、程序化求解和多智能体协作三条路线。结构感知类方法主要试图缓解语言模型对图结构表示不足的问题；程序化方法通过调用成熟图计算库来提高结果的可执行性和确定性；多智能体方法则把任务理解、规划组织、知识获取和错误修复拆分给不同角色完成\cite{tang2024graphgpt,chai2023graphllm,zhang2025gcoder,li2024graphteam}。这些研究说明，图推理研究的重点正在从单纯提升模型的结构理解能力，转向构建更加稳定的图任务求解流程。不过，在中间规划表示如何构造、检索到的知识如何与算法步骤保持一致，以及执行错误如何形成有效反馈闭环等方面，现有方法仍有进一步改进空间。这些问题也是下一小节需要继续讨论的重点。
+从已有工作的演进过程看，图推理增强方法已经逐渐形成结构感知增强、程序化求解和多智能体协作三条路线。GraphGPT\cite{tang2024graphgpt}和 GraphLLM\cite{chai2023graphllm}等结构感知方法主要试图缓解语言模型对图结构表示不足的问题；GCoder\cite{zhang2025gcoder}等程序化方法通过调用成熟图计算库来提高结果的可执行性和确定性；GraphTeam\cite{li2024graphteam}等多智能体方法则把任务理解、规划组织、知识获取和错误修复拆分给不同角色完成。这些研究说明，图推理研究的重点正在从单纯提升模型的结构理解能力，转向构建更加稳定的图任务求解流程。不过，在中间规划表示如何构造、检索到的知识如何与算法步骤保持一致，以及执行错误如何形成有效反馈闭环等方面，现有方法仍有进一步改进空间。这些问题也是下一小节需要继续讨论的重点。
 
 \subsection{研究现状总结}
 

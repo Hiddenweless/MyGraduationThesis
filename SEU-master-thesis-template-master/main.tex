@@ -7,6 +7,7 @@
 \usepackage{array}
 \usepackage{tabularx}
 \usepackage{longtable}
+\usepackage{pdfpages}
 \usepackage{tikz}
 \usepackage{pgfplots}
 \usepackage{float}
@@ -17,8 +18,6 @@
 \usepackage{etoolbox}
 \usetikzlibrary{positioning,calc,arrows.meta,fit,backgrounds,shapes.multipart}
 \pgfplotsset{compat=1.18}
-\preto{\subsection}{\FloatBarrier}
-
 \definecolor{pgBlue}{HTML}{5B8FF9}
 \definecolor{pgTeal}{HTML}{5AD8A6}
 \definecolor{pgOrange}{HTML}{F6BD16}
@@ -107,11 +106,11 @@
     {\ifblindreview\mbox{}\else WANG Teng-long\fi}                  % 作者英文姓名，首字母大写，姓名分开，双字用「-」连接
 
 \advisor
-    {林丽}                % 导师中文姓名
+    {林丽\ 讲师}                % 导师中文姓名及职称
     {LIN Li}        % 导师英文姓名
-    {讲师}                     % 导师职称
+    {Assistant Professor}                     % 导师英文职称
 \coadvisor
-    {浦春林 高工}                % 校外导师中文姓名
+    {浦春林\ 高工}                % 校外导师中文姓名及职称
     {PU Chun-lin}        % 校外导师英文姓名
     {Senior Engineer}                     % 校外导师英文职称
 %% ----------------------------------------------------------------------------
@@ -130,7 +129,7 @@
     \reviewer{盲审}{盲审}
 \else
     \committeechair{李传佑}               % 答辩委员会主席姓名
-    \reviewer{}{}                % 两位论文评阅人姓名
+    \reviewer{盲审}{盲审}                % 两位论文评阅人姓名
 \fi
 \department                        % 学院名称
     {\ifblindreview\mbox{}\else 苏州联合研究生院\fi}
@@ -150,7 +149,13 @@
 %% ----------------------------------------------------------------------------
 % ⚠️ 可以在编写论文的时候注释掉封面，加快编译速度
 \makebigcover  % 生成A3大封面
-\makecover     % 生成小封面
+\makechinesecover
+\makeenglishcover
+\includepdf[
+    pages=1,
+    fitpaper=true,
+    pagecommand={\thispagestyle{empty}}
+]{figures/defined/signed-declaration.pdf}
 	 
 %% ----------------------------------------------------------------------------
 %%                          Abstract and Contents

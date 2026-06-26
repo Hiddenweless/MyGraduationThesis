@@ -1,7 +1,7 @@
 \section{协同推理机制验证}
 \label{sec:system_validation}
 
-本节检验黑板调度下的协同推理机制能否稳定支撑多轮求解过程。验证重点放在三个方面：共享黑板是否能够减少状态漂移，共享缓存是否能够支撑失败回放和恢复，错误归因与预算控制是否能够降低无效重试。围绕这些问题，本文从重复运行稳定性、检索信号质量、参数预算、运行开销、鲁棒性和消融实验等方面展开验证。
+本节检验黑板调度下的协同推理机制能否稳定支撑多轮求解过程。验证重点包括多次运行时的结果波动和修复收敛情况、规划状态与约束标签对检索质量的影响，以及恢复预算对求解效果和运行开销的影响。围绕这些问题，本文从重复运行稳定性、检索质量、参数敏感性、运行开销、鲁棒性和消融实验等方面展开验证。
 
 \subsection{重复运行稳定性分析}
 
@@ -22,7 +22,7 @@ GraphWiz & $\pm0.9$ & 74.8 & 89.7 \\
 \end{tabular}
 \end{table}
 
-表\ref{tab:stability_observation}显示，结构较清晰、标准算法映射较稳定的任务在三个指标上整体更优；约束更复杂的任务首次通过率略低，但经过反馈修复后仍能保持较高收敛水平。该结果说明，PlanGraph 的协同推理机制除了提高单次运行的精确匹配率，还能抑制多次运行时的结果波动，并对失败样例提供有限恢复能力。黑板事件和共享缓存链为这些统计提供了直接依据：每次失败、修复和重新验证都被记录为可追踪事件，因此可以区分首次成功、修复成功和最终失败三类情况。
+表\ref{tab:stability_observation}显示，结构较清晰、标准算法映射较稳定的任务在三个指标上整体更优；约束更复杂的任务首次通过率略低，但经过反馈修复后仍能保持较高收敛水平。三个数据集的精确匹配率波动均未超过 $\pm0.9$ 个百分点，进入修复循环的样例中有 89.7\% 以上能够在限定轮数内收敛，表明协同推理过程具有较稳定的重复运行结果和有限恢复能力。黑板事件和共享缓存链为这些统计提供了记录依据：每次失败、修复和重新验证都被记录为可追踪事件，因此可以区分首次成功、修复成功和最终失败三类情况。
 
 \subsection{检索质量验证}
 
@@ -44,7 +44,7 @@ Q4 规划伪代码及结构约束标签 & \textbf{82.1\%} & \textbf{94.2\%} & \t
 \end{tabular}
 \end{table}
 
-从表\ref{tab:retrieval_quality}可见，四种查询方式呈现出清晰的层次关系：直接使用原始问题文本的效果最弱；在显式加入任务语义后，Q2 的命中效果明显提升；将问题压缩为规划伪代码后，Q3 在四项指标上继续改善；当查询中继续补充图类型、目标形式和关键约束等结构化标签时，Q4 的检索排序质量达到最好。Q3 和 Q4 在 MRR 上的提升还说明，黑板中保存的规划状态会影响正确知识的召回情况和排序位置，从而有助于减少编码阶段对错误 API 或不相关文档的尝试次数。这一结果从实验上支持了共享状态约束检索输入的协同推理机制。
+从表\ref{tab:retrieval_quality}可见，四种查询方式呈现出清晰的层次关系：直接使用原始问题文本的效果最弱；在显式加入任务语义后，Q2 的命中效果明显提升；将问题压缩为规划伪代码后，Q3 在四项指标上继续改善；当查询中继续补充图类型、目标形式和关键约束等结构化标签时，Q4 的检索排序质量达到最好。Q3 和 Q4 在 MRR 上的提升说明，黑板中保存的规划状态会影响正确知识的召回情况和排序位置，为编码阶段提供更相关的知识依据。这一结果从实验上支持了共享状态约束检索输入的协同推理机制。
 
 \subsection{参数敏感性分析}
 
@@ -71,7 +71,7 @@ $(9,4)$ & 71.25 & 77.50 & 63.75 & 79.20 & 1.20 & 19.70 & -2.92 & +4.50 \\
 }
 \end{table}
 
-表\ref{tab:param_main_result}显示，$r=0$ 时 PlanGraph 缺少反馈修复能力，困难样本精确匹配率下降到 55.00\%；当参数增大到 $(7,3)$、$(5,4)$ 或 $(9,4)$ 时，更多知识条目和修复轮数未带来稳定的子集收益。相比之下，$(3,1)$ 能够在保持较高子集精确匹配率的同时控制平均修复轮数和平均耗时，说明适中的检索规模与少量反馈修复更适合作为默认配置，也说明有界恢复比无约束增加修复轮数更符合协同调度目标。
+表\ref{tab:param_main_result}显示，$r=0$ 时 PlanGraph 缺少反馈修复能力，困难样本精确匹配率下降到 55.00\%；当参数增大到 $(7,3)$、$(5,4)$ 或 $(9,4)$ 时，更多知识条目和修复轮数未带来稳定的子集收益。相比之下，$(3,1)$ 能够在保持较高子集精确匹配率的同时控制平均修复轮数和平均耗时，适合作为本文实验的默认配置。该结果也表明，继续扩大检索规模和修复预算会增加耗时，但不一定带来稳定收益。
 
 \subsection{运行开销分析}
 
@@ -141,11 +141,11 @@ $(9,4)$ & 71.25 & 77.50 & 63.75 & 79.20 & 1.20 & 19.70 & -2.92 & +4.50 \\
 \toprule
 查询类型 & 构造依据 \\
 \midrule
-\texttt{Q0} & \texttt{task\_type and graph attributes} \\
-\texttt{Q1} & \texttt{key actions from pseudocode and algorithm\_hints} \\
-\texttt{Q2} & \texttt{constraint\_tags and output\_format} \\
-\texttt{Q3} & \texttt{retrieval gaps or low-coverage constraints} \\
-\texttt{Q4} & \texttt{execution error type, failed API, and repair target} \\
+\texttt{q\_raw} & \texttt{raw problem text} \\
+\texttt{q\_task} & \texttt{task\_type and graph attributes} \\
+\texttt{q\_plan} & \texttt{key actions from pseudocode and algorithm\_hints} \\
+\texttt{q\_cons} & \texttt{constraint\_tags, output\_format, and low-coverage constraints} \\
+\texttt{q\_err} & \texttt{execution error type, failed API, and repair target} \\
 \texttt{Ranking} & \texttt{semantic relevance, task-tag matching, and constraint consistency} \\
 \bottomrule
 \end{tabular}

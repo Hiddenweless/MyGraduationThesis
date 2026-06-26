@@ -5,7 +5,9 @@
 
 \subsection{方法验证目标与数据集}
 
-本文选取 GraphArena、NLGraph、GraphWiz、LLM4DyG 和 GraphInstruct 五个图推理基准测试集进行方法验证\cite{tang2025grapharena,chen2024nlgraph,gong2024graphwiz,llm4dyg2024,graphinstruct2024}。这些数据集共同覆盖经典图算法、组合优化、自然语言图任务、动态图查询和指令式图操作等场景，既包含以节点、边和权重为核心输入的抽象图推理问题，也包含以自然语言场景或指令形式描述的实际场景化图推理问题。
+本文选取五个图推理基准测试集进行方法验证，包括 GraphArena\cite{tang2025grapharena}、NLGraph\cite{chen2024nlgraph}和 GraphWiz\cite{gong2024graphwiz}，以及 LLM4DyG\cite{llm4dyg2024}和 GraphInstruct\cite{graphinstruct2024}。这些数据集共同覆盖经典图算法、组合优化、自然语言图任务、动态图查询和指令式图操作等场景，既包含以节点、边和权重为核心输入的抽象图推理问题，也包含以自然语言场景或指令形式描述的实际场景化图推理问题。
+
+对比方法包括 GPT-4o\cite{openai2024gpt4o}直接推理、多智能体图推理方法 GraphTeam\cite{li2024graphteam}以及程序生成式图推理方法 GCoder\cite{zhang2025gcoder}。三者分别代表直接提示推理、多智能体协同和程序生成求解路线，用于比较规划反馈闭环相对于现有图推理方法的效果。
 
 从去除数据集内部重复任务后的任务类别看，GraphArena 包含 10 类任务，NLGraph 包含 8 类任务，GraphWiz 包含 9 类任务，LLM4DyG 包含 9 类任务，GraphInstruct 包含 21 类任务。本文在保持公开任务定义不变的前提下统一评价口径，主实验采用精确匹配率（Exact Match, EM）作为评价指标。任务类别和逐任务结果能够反映规划反馈机制在不同图推理场景中的具体作用。
 
@@ -52,7 +54,7 @@
 
 为避免总体平均结果掩盖不同任务族之间的性能差异，本文进一步给出五个基准测试集的逐任务精确匹配率统计，以从更细粒度上分析 PlanGraph 在不同图推理场景中的适用性与性能边界。
 
-GraphArena 是面向图计算与图推理任务的综合基准测试集，覆盖邻居查询、连通分量、最短距离、图直径、图编辑距离以及多类组合优化问题。表\ref{tab:grapharena_detail}给出了各方法在该基准测试集各子任务上的逐项结果。其中，CN、CC、SD、GD 和 GED 分别表示邻居查询、连通分量、最短距离、图直径和图编辑距离任务；MIS、MVC、MCP、MCS 和 TSP 分别表示最大独立集、最小点覆盖、最大团、最大公共子图和旅行商问题。
+GraphArena\cite{tang2025grapharena}是面向图计算与图推理任务的综合基准测试集，覆盖邻居查询、连通分量、最短距离、图直径、图编辑距离以及多类组合优化问题。表\ref{tab:grapharena_detail}给出了各方法在该基准测试集各子任务上的逐项结果。其中，CN、CC、SD、GD 和 GED 分别表示邻居查询、连通分量、最短距离、图直径和图编辑距离任务；MIS、MVC、MCP、MCS 和 TSP 分别表示最大独立集、最小点覆盖、最大团、最大公共子图和旅行商问题。
 
 \begin{table}[htbp]
 \centering
@@ -78,7 +80,7 @@ TSP & 4.9 & 82.7 & 80.7 & \textbf{86.8} \\
 
 表\ref{tab:grapharena_detail}显示，基础结构任务对各强基线均已较为简单，CN、CC、SD 和 GD 等子任务几乎都达到满分；图编辑距离和组合优化任务则具有较强区分度。PlanGraph 在这些高约束任务上保持更优结果，说明规划生成、知识检索和执行验证的闭环机制并非只在基础任务的饱和区间内带来边际改善，而是能够更有效地提升复杂图搜索任务中的可行性控制与错误修复能力。
 
-NLGraph 主要考察自然语言条件下的图算法推理能力，其核心难点不只在于调用某个图算法，而在于先从自然语言描述中恢复图结构、任务目标和求解约束，再完成相应的算法推理。表\ref{tab:nlgraph_detail}给出了各方法在 NLGraph 各子任务上的逐项结果。其中，CONN、MF、CYC、TOPO、SP、BM、HP 和 GNN 分别表示连通性、最大流、环检测、拓扑排序、最短路径、二分图匹配、哈密顿路径和 GNN 推理任务。
+NLGraph\cite{chen2024nlgraph}主要考察自然语言条件下的图算法推理能力，其核心难点不只在于调用某个图算法，而在于先从自然语言描述中恢复图结构、任务目标和求解约束，再完成相应的算法推理。表\ref{tab:nlgraph_detail}给出了各方法在 NLGraph 各子任务上的逐项结果。其中，CONN、MF、CYC、TOPO、SP、BM、HP 和 GNN 分别表示连通性、最大流、环检测、拓扑排序、最短路径、二分图匹配、哈密顿路径和 GNN 推理任务。
 
 \begin{table}[htbp]
 \centering
@@ -102,7 +104,7 @@ GNN & 52.10 & 96.80 & \textbf{97.40} & \textbf{97.40} \\
 
 在 NLGraph 上，PlanGraph 对最大流和拓扑排序这类需要算法步骤清晰展开的任务提升更为明显，而在连通性、最短路径、二分匹配和哈密顿路径等已被现有方法较好解决的任务上也至少保持同等水平。该结果说明，PlanGraph 的优势主要体现在把自然语言问题稳定映射到可执行图求解过程这一环节上。
 
-GraphWiz 是面向指令式图推理场景构建的基准测试集，主要考察模型在给定图操作指令或明确求解要求时，能否完成任务理解、算法选择和结果输出。表\ref{tab:graphwiz_detail}给出了各方法在该基准测试集各子任务上的逐项结果。其中，CONN、CYC、BIP、TOPO、SP、MTS、MF、HP 和 SM 分别表示连通性判定、环检测、二分图判定、拓扑排序、最短路径、最大三角形权重和、最大流、哈密顿路径和子图匹配任务。
+GraphWiz\cite{gong2024graphwiz}是面向指令式图推理场景构建的基准测试集，主要考察模型在给定图操作指令或明确求解要求时，能否完成任务理解、算法选择和结果输出。表\ref{tab:graphwiz_detail}给出了各方法在该基准测试集各子任务上的逐项结果。其中，CONN、CYC、BIP、TOPO、SP、MTS、MF、HP 和 SM 分别表示连通性判定、环检测、二分图判定、拓扑排序、最短路径、最大三角形权重和、最大流、哈密顿路径和子图匹配任务。
 
 \begin{table}[htbp]
 \centering
@@ -127,7 +129,7 @@ SM & 88.30 & 99.30 & \textbf{99.50} & 98.80 \\
 
 GraphWiz 中差异最明显的是哈密顿路径任务，其对路径约束满足要求极高。PlanGraph 在该任务上远超对比方法，说明显式规划与程序验证对哈密顿路径类问题尤为有效。在连通性判定、最短路径和最大流等需要稳定图构建与步骤执行的任务上，PlanGraph 也保持了较强竞争力。
 
-LLM4DyG 聚焦动态图与时间约束场景，任务通常要求模型同时处理图结构变化、时间顺序以及事件依赖关系。表\ref{tab:llm4dyg_detail}给出了各方法在 LLM4DyG 各子任务上的逐项结果。其中，WL、WC、WTC、WN、WNB、CTC、CTP、FTP 和 SE 分别表示边出现时间查询、首次连通时间查询、三元闭包形成时间查询、给定时间邻居查询、动态图邻居集合查询、三元闭包判定、时序路径判定、时序路径查找和边时间排序任务。
+LLM4DyG\cite{llm4dyg2024}聚焦动态图与时间约束场景，任务通常要求模型同时处理图结构变化、时间顺序以及事件依赖关系。表\ref{tab:llm4dyg_detail}给出了各方法在 LLM4DyG 各子任务上的逐项结果。其中，WL、WC、WTC、WN、WNB、CTC、CTP、FTP 和 SE 分别表示边出现时间查询、首次连通时间查询、三元闭包形成时间查询、给定时间邻居查询、动态图邻居集合查询、三元闭包判定、时序路径判定、时序路径查找和边时间排序任务。
 
 \begin{table}[htbp]
 \centering
@@ -153,7 +155,7 @@ SE & 49.67 & 35.80 & \textbf{99.67} & 93.67 & 99.33 \\
 
 从表\ref{tab:llm4dyg_detail}可以看出，PlanGraph 在边出现时间查询、给定时间邻居查询、动态图邻居集合查询和边时间排序等任务上表现较好，但在首次连通时间查询、三元闭包判定和时序路径判定等任务上尚未全面超过最优对比方法。这说明动态图任务内部差异较大。对于更依赖结构约束检查和过程验证的任务，规划反馈闭环能够带来更明显的收益；而对于需要细粒度时间建模或连续状态跟踪的任务，当前方法仍存在改进空间。
 
-GraphInstruct 面向图指令跟随场景，强调模型能否根据任务指令稳定完成邻居查询、边判断、连通性分析、遍历与拓扑排序等基础图操作。GraphInstruct 原始设置共包含 21 个任务，本文对全部任务进行统计，不对任务集合做抽样或裁剪。表\ref{tab:graphinstruct_detail}给出了各方法在该基准测试集上的逐项结果。其中，NB、BIP、EDGE、CONN、DEG、DFS、PRED、TOPO、CC、CN、HP、JAC、SP、DIAM、PR、MF、MST、BFS、CLUST、CYC 和 EP 分别表示邻居查询、二分图判定、边存在判断、连通性、度数计算、深度优先遍历、前驱查询、拓扑排序、连通分量、公共邻居、哈密顿路径、Jaccard 系数、最短路径、图直径、PageRank、最大流、最小生成树、广度优先遍历、聚类系数、环检测和欧拉路径任务。
+GraphInstruct\cite{graphinstruct2024}面向图指令跟随场景，强调模型能否根据任务指令稳定完成邻居查询、边判断、连通性分析、遍历与拓扑排序等基础图操作。GraphInstruct 原始设置共包含 21 个任务，本文对全部任务进行统计，不对任务集合做抽样或裁剪。表\ref{tab:graphinstruct_detail}给出了各方法在该基准测试集上的逐项结果。其中，NB、BIP、EDGE、CONN、DEG、DFS、PRED、TOPO、CC、CN、HP、JAC、SP、DIAM、PR、MF、MST、BFS、CLUST、CYC 和 EP 分别表示邻居查询、二分图判定、边存在判断、连通性、度数计算、深度优先遍历、前驱查询、拓扑排序、连通分量、公共邻居、哈密顿路径、Jaccard 系数、最短路径、图直径、PageRank、最大流、最小生成树、广度优先遍历、聚类系数、环检测和欧拉路径任务。
 
 \begin{table}[htbp]
 \centering
